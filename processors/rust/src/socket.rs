@@ -65,6 +65,7 @@ impl Receiver {
         let mut local: libc::sockaddr_in = unsafe { zeroed() };
         local.sin_family = libc::AF_INET as libc::sa_family_t;
         local.sin_port = port.to_be();
+        local.sin_addr.s_addr = u32::from_ne_bytes(group.octets());
         // SAFETY: local is initialized and the passed length matches its representation.
         if unsafe {
             libc::bind(

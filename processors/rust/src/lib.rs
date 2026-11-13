@@ -3,7 +3,34 @@ pub mod socket;
 use ring::{Consumer, Producer};
 use std::collections::{BTreeMap, HashMap};
 pub const MAX_PAYLOAD: usize = 1472;
+pub const DEFAULT_MAX_ORDERS: usize = 1_000_000;
+pub const LARGEST_ORDER_LIMIT: usize = 100_000_000;
 pub type Error = String;
+
+enum BookError {
+    Fatal(Error),
+    MissingOrder,
+    ExcessQuantity,
+}
+impl From<Error> for BookError {
+    fn from(error: Error) -> Self {
+        Self::Fatal(error)
+    }
+}
+impl From<&str> for BookError {
+    fn from(error: &str) -> Self {
+        Self::Fatal(error.into())
+    }
+}
+impl BookError {
+    fn message(self) -> Error {
+        match self {
+            Self::Fatal(error) => error,
+            Self::MissingOrder => "PITCH update references a missing order".into(),
+            Self::ExcessQuantity => "Reduced/executed quantity exceeds known order".into(),
+        }
+    }
+}
 
 pub fn monotonic_ns() -> u64 {
     let mut ts = libc::timespec {
@@ -125,22 +152,36 @@ pub struct BookLevel {
 pub struct OrderBook {
     orders: HashMap<u64, Order>,
     symbols: Symbols,
+    max_orders: usize,
 }
 impl Default for OrderBook {
     fn default() -> Self {
-        Self {
-            orders: HashMap::with_capacity(4096),
-            symbols: BTreeMap::new(),
-        }
+        Self::new(DEFAULT_MAX_ORDERS).expect("Valid default live order limit")
     }
 }
 impl OrderBook {
+    pub fn new(max_orders: usize) -> Result<Self, Error> {
+        if !(1..=LARGEST_ORDER_LIMIT).contains(&max_orders) {
+            return Err("Need 1..100000000 maximum live orders".into());
+        }
+        Ok(Self {
+            orders: HashMap::with_capacity(max_orders),
+            symbols: BTreeMap::new(),
+            max_orders,
+        })
+    }
+    pub fn max_orders(&self) -> usize {
+        self.max_orders
+    }
     pub fn clear(&mut self) {
         self.orders.clear();
         self.symbols.clear();
     }
     pub fn order_count(&self) -> usize {
         self.orders.len()
+    }
+    pub fn symbol_count(&self) -> usize {
+        self.symbols.len()
     }
     fn levels<'a>(symbols: &'a mut Symbols, order: &Order) -> &'a mut Levels {
         let sides = symbols.entry(order.symbol).or_default();
@@ -163,13 +204,31 @@ impl OrderBook {
         if level.orders == 0 {
             side.remove(&order.price);
         }
+        let sides = symbols.get(&order.symbol).expect("L2 invariant");
+        if sides.bids.is_empty() && sides.asks.is_empty() {
+            symbols.remove(&order.symbol);
+        }
     }
     pub fn apply(&mut self, message: &[u8]) -> Result<(), Error> {
-        require(message, 14)?;
+        self.apply_inner(message).map_err(BookError::message)
+    }
+    fn apply_inner(&mut self, message: &[u8]) -> Result<(), BookError> {
+        require(message, 2)?;
         let kind = message[1];
+        let minimum = match kind {
+            0x21 => 34,
+            0x23 => 26,
+            0x25 => 18,
+            0x27 => 27,
+            0x29 => 14,
+            _ => return Err("Unsupported PITCH market message".into()),
+        };
+        require(message, minimum)?; // Validate even when the order is absent.
+        if matches!(kind, 0x23 | 0x25) && le(&message[14..18]) == 0 {
+            return Err("Invalid zero reduced/executed quantity".into());
+        }
         let id = le(&message[6..14]);
         if kind == 0x21 {
-            require(message, 34)?;
             let order = Order {
                 symbol: message[19..25].try_into().unwrap(),
                 side: message[14],
@@ -188,17 +247,16 @@ impl OrderBook {
             if order.symbol.iter().all(|b| *b == b' ') {
                 return Err("Empty PITCH symbol".into());
             }
+            if self.orders.len() == self.max_orders {
+                return Err("PITCH live order limit exceeded".into());
+            }
             self.orders.insert(id, order);
             Self::add_level(&mut self.symbols, &order);
             return Ok(());
         }
-        let order = self
-            .orders
-            .get_mut(&id)
-            .ok_or("PITCH update references a missing order")?;
+        let order = self.orders.get_mut(&id).ok_or(BookError::MissingOrder)?;
         match kind {
             0x27 => {
-                require(message, 27)?;
                 let quantity = le(&message[14..18]) as u32;
                 Self::remove_level(&mut self.symbols, order);
                 if quantity == 0 {
@@ -210,10 +268,9 @@ impl OrderBook {
                 }
             }
             0x23 | 0x25 => {
-                require(message, if kind == 0x23 { 26 } else { 18 })?;
                 let quantity = le(&message[14..18]) as u32;
-                if quantity == 0 || quantity > order.quantity {
-                    return Err("Invalid reduced/executed quantity".into());
+                if quantity > order.quantity {
+                    return Err(BookError::ExcessQuantity);
                 }
                 Self::levels(&mut self.symbols, order)
                     .get_mut(&order.price)
@@ -318,6 +375,7 @@ impl Processor {
         policy: LossPolicy,
         clock: fn() -> u64,
         gap_slots: usize,
+        max_orders: usize,
     ) -> Result<Self, Error> {
         if unit == 0 || samples == 0 {
             return Err("Need nonzero unit/sample target".into());
@@ -338,7 +396,7 @@ impl Processor {
             loss_seen: false,
             samples: Vec::with_capacity(samples),
             stats: Stats::default(),
-            book: OrderBook::default(),
+            book: OrderBook::new(max_orders)?,
         })
     }
     pub fn take_gap_consumer(&mut self) -> Option<Consumer<GapRange>> {
@@ -439,15 +497,15 @@ impl Processor {
                         self.stats.joined_midstream = true;
                         self.note_loss();
                     }
-                    let applied = match self.book.apply(message) {
+                    let applied = match self.book.apply_inner(message) {
                         Ok(()) => true,
-                        Err(error) => {
-                            if self.policy != LossPolicy::Continue || !self.dirty {
-                                return Err(error);
-                            }
+                        Err(BookError::MissingOrder | BookError::ExcessQuantity)
+                            if self.policy == LossPolicy::Continue && self.dirty =>
+                        {
                             self.stats.skipped_market_messages += 1;
                             false
                         }
+                        Err(error) => return Err(error.message()),
                     };
                     // Endpoint immediately follows the L2 update, before counters/sampling.
                     if applied

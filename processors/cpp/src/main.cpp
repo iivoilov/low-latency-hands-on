@@ -36,6 +36,7 @@ struct Options {
     std::uint64_t warmup = 180;
     std::size_t ring_slots = 4096;
     std::size_t gap_slots = 4096;
+    std::size_t max_live_orders = low_latency::OrderBook::default_max_orders;
     unsigned idle_ms = 3000;
     int receive_buffer = 4 * 1024 * 1024;
     low_latency::LossPolicy loss = low_latency::LossPolicy::stop;
@@ -52,6 +53,7 @@ constexpr std::string_view help = R"(Usage: processor_cpp [options]
   --warmup-messages N    Initial market messages to apply without sampling (180)
   --ring-slots N         Whole-packet SPSC ring capacity, power of two (4096)
   --gap-slots N          Reader-to-recovery gap queue capacity, power of two (4096)
+  --max-live-orders N    Concurrent live order limit, 1..100000000 (1000000)
   --receive-buffer N     Requested OS socket buffer bytes (4194304)
   --idle-timeout-ms N    Stop on idle after first packet, 1..60000 (3000)
   --on-loss stop|continue  Stop/invalidate benchmark or continue with partial L2 (stop)
@@ -84,6 +86,7 @@ Options parse(int argc, char** argv) {
         else if (name == "--warmup-messages") { options.warmup = integer(name, value, 100'000'000); }
         else if (name == "--ring-slots") { options.ring_slots = static_cast<std::size_t>(integer(name, value, 65536)); }
         else if (name == "--gap-slots") { options.gap_slots = static_cast<std::size_t>(integer(name, value, 65536)); }
+        else if (name == "--max-live-orders") { options.max_live_orders = static_cast<std::size_t>(integer(name, value, low_latency::OrderBook::largest_order_limit)); }
         else if (name == "--receive-buffer") { options.receive_buffer = static_cast<int>(integer(name, value, 256 * 1024 * 1024)); }
         else if (name == "--idle-timeout-ms") { options.idle_ms = static_cast<unsigned>(integer(name, value, 60000)); }
         else if (name == "--output") { options.output = value; }
@@ -95,8 +98,11 @@ Options parse(int argc, char** argv) {
         else { throw std::invalid_argument("Unknown option: " + std::string(name)); }
     }
     if (!IN_MULTICAST(ntohl(address(options.group).s_addr))) { throw std::invalid_argument("Need a multicast --group"); }
-    address(options.interface);
-    if (options.unit == 0 || options.samples == 0 || options.idle_ms == 0 || options.receive_buffer == 0 ||
+    const auto interface_ip = ntohl(address(options.interface).s_addr);
+    if (interface_ip == INADDR_ANY || interface_ip == INADDR_BROADCAST || IN_MULTICAST(interface_ip)) {
+        throw std::invalid_argument("Need a concrete unicast --interface address");
+    }
+    if (options.unit == 0 || options.samples == 0 || options.max_live_orders == 0 || options.idle_ms == 0 || options.receive_buffer == 0 ||
         options.ring_slots == 0 || (options.ring_slots & (options.ring_slots - 1)) != 0 ||
         options.gap_slots == 0 || (options.gap_slots & (options.gap_slots - 1)) != 0) {
         throw std::invalid_argument("Need nonzero unit/messages/timeout/buffer and power-of-two packet/gap queues");
@@ -143,7 +149,7 @@ public:
             sockaddr_in local{};
             local.sin_family = AF_INET;
             local.sin_port = htons(options.port);
-            local.sin_addr.s_addr = htonl(INADDR_ANY);
+            local.sin_addr = low_latency::cli::address(options.group);
             if (bind(fd_, reinterpret_cast<const sockaddr*>(&local), sizeof(local)) < 0) { fail("bind"); }
             ip_mreq membership{};
             membership.imr_multiaddr = low_latency::cli::address(options.group);
@@ -233,6 +239,9 @@ std::string report(const Options& options, const low_latency::Processor& process
         << ",\n  \"build_type\": " << std::quoted(PROCESSOR_BUILD_TYPE)
         << ",\n  \"receive_api\": \"recvmsg\",\n  \"consumer_wait\": \"busy_spin\""
         << ",\n  \"order_container\": \"std::unordered_map\",\n  \"level_container\": \"std::map\""
+        << ",\n  \"order_hash\": \"SipHash-2-4\""
+        << ",\n  \"max_order_bucket_entries\": null"
+        << ",\n  \"max_live_orders\": " << processor.book().max_orders()
         << ",\n  \"threads\": 2,\n  \"continuous\": " << options.continuous
         << ",\n  \"loss_policy\": " << std::quoted(options.loss == low_latency::LossPolicy::stop ? "stop" : "continue")
         << ",\n  \"benchmark_valid\": " << valid << ",\n  \"complete\": " << processor.complete()
@@ -303,7 +312,7 @@ int main(int argc, char** argv) {
         std::signal(SIGINT, stop);
         std::signal(SIGTERM, stop);
         low_latency::Processor processor(options.unit, options.warmup, options.samples, options.loss,
-                                          low_latency::monotonic_ns, options.gap_slots);
+                                          low_latency::monotonic_ns, options.gap_slots, options.max_live_orders);
         low_latency::PacketRing ring(options.ring_slots);
         Receiver receiver(options);
         timespec clock_resolution{};

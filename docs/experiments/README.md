@@ -1,6 +1,6 @@
 # Experiments and measurement methods
 
-Measurements were collected on 12 November 2026. The names below are hardware
+Measurements were collected on 12–13 November 2026. The names below are hardware
 labels, not host names. [Machine-readable hardware](../../configs/hardware.json)
 and [profile parameters/checksums](profiles.json) accompany the reports.
 
@@ -25,6 +25,9 @@ cores are on node 0. Placement pins are not exclusive CPU reservations.
    receiver and matching sender-queue drop/missing-packet counts.
 5. [X550 hardware RX timestamps](2026-11-12-hardware-rx.md): intact bond, full
    timestamp coverage, receive-path decomposition and clock-correlation limits.
+6. [Hardened SipHash C++ baseline](2026-11-13-siphash.md): shared C++/Rust
+   validation and state bounds, C++ keyed hashing without collision rejection,
+   full native validation and 36 separate-host timing trials.
 
 ## Workload and timing contract
 

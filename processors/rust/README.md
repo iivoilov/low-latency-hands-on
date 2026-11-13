@@ -48,10 +48,31 @@ single recovery-consumer endpoint; no recovery worker is included. Concurrent
 tests cover variable-length packet wraparound and gap FIFO preservation.
 
 Orders use standard `HashMap<u64, Order>` with `RandomState`, reserving capacity
-for 4,096 orders. Symbols and price levels use `BTreeMap`. These have different
+for the configured live-order limit (one million by default). Symbols and price
+levels use `BTreeMap`. These have different
 hashing, layout and allocation behavior from C++ `unordered_map` / `map`; the
 comparison measures these implementations and toolchains, not language alone.
+Both books accept `--max-live-orders` and prune empty symbols. The limit counts
+simultaneously live orders, not IDs seen during the day. Destination
+filtering and fatal-versus-skippable input errors follow the shared contract;
+sender addresses are not checked. C++ uses secret-keyed SipHash-2-4 with no
+bucket-length rejection; Rust retains `RandomState`. The initial
+2026-11-13 hardening experiment used a C++ `map` for order IDs; those results are
+historical. The [current native comparison](../../docs/experiments/2026-11-13-siphash.md)
+records the selected C++ baseline and unchanged Rust reference.
 Book allocations remain timed. Sample storage is reserved before reception and
 bounded at one million entries by default. JSON serialization, sorting and file
 output run after the processing threads stop. `libc` supplies platform ABI;
 `serde_json` and its dependencies are confined to reporting, outside timed updates.
+
+## Input validation and resource protection
+
+The [shared security behavior](../README.md#input-validation-and-resource-protection)
+is part of the processor implementation: bounded framing/field validation,
+destination filtering without sender-IP trust, bounded queues/samples/live
+orders, and pruning empty book state. These checks remain active after loss;
+only the documented missing-reference and positive-overdraw cases are skippable.
+Rust's standard `HashMap` uses randomized keyed hashing selected for HashDoS
+resistance; it accepts colliding keys normally and has no 16-entry cutoff.
+This gives practical chosen-ID resistance, not a strict worst-case lookup bound
+or feed authentication. The live-order budget remains independent of hashing.

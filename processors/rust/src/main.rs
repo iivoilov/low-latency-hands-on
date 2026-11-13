@@ -31,13 +31,14 @@ struct Options {
     warmup: u64,
     ring_slots: usize,
     gap_slots: usize,
+    max_live_orders: usize,
     idle_ms: u32,
     receive_buffer: i32,
     loss: LossPolicy,
     continuous: bool,
     output: Option<PathBuf>,
 }
-const HELP:&str="Usage: processor_rust [options]\n  --group IPv4 (239.255.0.1)\n  --interface IPv4 (127.0.0.1)\n  --port N (30001; 0 chooses an ephemeral port)\n  --unit N (1)\n  --messages N (1000000)\n  --warmup-messages N (180)\n  --ring-slots N (4096; power of two)\n  --gap-slots N (4096; power of two)\n  --receive-buffer N (4194304)\n  --idle-timeout-ms N (3000)\n  --on-loss stop|continue (stop)\n  --continuous\n  --output PATH (never overwritten)\n  --help\n\nTwo threads: recvmsg -> timestamped packet ring -> PITCH/L2 updates.\nCLOCK_MONOTONIC measures recvmsg return to each message's L2 update.\nControls and warmup are excluded; ring wait and earlier packet messages are included.\n";
+const HELP:&str="Usage: processor_rust [options]\n  --group IPv4 (239.255.0.1)\n  --interface IPv4 (127.0.0.1)\n  --port N (30001; 0 chooses an ephemeral port)\n  --unit N (1)\n  --messages N (1000000)\n  --warmup-messages N (180)\n  --ring-slots N (4096; power of two)\n  --gap-slots N (4096; power of two)\n  --max-live-orders N (1000000; 1..100000000 simultaneously live orders)\n  --receive-buffer N (4194304)\n  --idle-timeout-ms N (3000)\n  --on-loss stop|continue (stop)\n  --continuous\n  --output PATH (never overwritten)\n  --help\n\nTwo threads: recvmsg -> timestamped packet ring -> PITCH/L2 updates.\nCLOCK_MONOTONIC measures recvmsg return to each message's L2 update.\nControls and warmup are excluded; ring wait and earlier packet messages are included.\n";
 fn number(value: &str, max: u64) -> Result<u64, String> {
     if value.is_empty() || !value.bytes().all(|b| b.is_ascii_digit()) {
         return Err(format!("Invalid integer {}", value));
@@ -58,6 +59,7 @@ fn options() -> Result<Options, String> {
         warmup: 180,
         ring_slots: 4096,
         gap_slots: 4096,
+        max_live_orders: DEFAULT_MAX_ORDERS,
         idle_ms: 3000,
         receive_buffer: 4194304,
         loss: LossPolicy::Stop,
@@ -90,6 +92,9 @@ fn options() -> Result<Options, String> {
             "--warmup-messages" => o.warmup = number(&value, 100000000)?,
             "--ring-slots" => o.ring_slots = number(&value, 65536)? as usize,
             "--gap-slots" => o.gap_slots = number(&value, 65536)? as usize,
+            "--max-live-orders" => {
+                o.max_live_orders = number(&value, LARGEST_ORDER_LIMIT as u64)? as usize
+            }
             "--idle-timeout-ms" => o.idle_ms = number(&value, 60000)? as u32,
             "--receive-buffer" => o.receive_buffer = number(&value, 256 * 1024 * 1024)? as i32,
             "--on-loss" => {
@@ -106,6 +111,7 @@ fn options() -> Result<Options, String> {
     if !o.group.is_multicast()
         || o.unit == 0
         || o.samples == 0
+        || o.max_live_orders == 0
         || o.idle_ms == 0
         || o.receive_buffer == 0
         || !o.ring_slots.is_power_of_two()
@@ -115,6 +121,12 @@ fn options() -> Result<Options, String> {
             "Need multicast group, nonzero unit/messages/timeout/buffer and power-of-two queues"
                 .into(),
         );
+    }
+    if o.interface.is_unspecified()
+        || o.interface.is_multicast()
+        || o.interface == Ipv4Addr::BROADCAST
+    {
+        return Err("Need a concrete unicast --interface address".into());
     }
     if o.output.as_ref().is_some_and(|p| p.exists()) {
         return Err("Report already exists".into());
@@ -239,6 +251,7 @@ fn run(o: Options) -> Result<bool, String> {
         o.loss,
         monotonic_ns,
         o.gap_slots,
+        o.max_live_orders,
     )?;
     let mut gaps = processor.take_gap_consumer().unwrap();
     let (producer, mut consumer) = ring::channel::<Received>(o.ring_slots)?;
@@ -319,7 +332,7 @@ fn run(o: Options) -> Result<bool, String> {
         "receive_api":"recvmsg","consumer_wait":"busy_spin","order_container":"std::collections::HashMap (RandomState)","level_container":"std::collections::BTreeMap","threads":2,
         "continuous":o.continuous,"loss_policy":if o.loss==LossPolicy::Stop {"stop"}else{"continue"},"benchmark_valid":valid,"complete":processor.complete(),"book_current":processor.book_current() && error.is_empty(),"error":error,
         "clock":"CLOCK_MONOTONIC","clock_resolution_ns":resolution,"timing_boundary":"recvmsg_return_to_message_l2_update",
-        "group":o.group.to_string(),"interface":o.interface.to_string(),"unit":o.unit,"target_samples":o.samples,"warmup_target":o.warmup,"warmup_messages":s.warmup_messages,
+        "group":o.group.to_string(),"interface":o.interface.to_string(),"max_live_orders":processor.book.max_orders(),"unit":o.unit,"target_samples":o.samples,"warmup_target":o.warmup,"warmup_messages":s.warmup_messages,
         "received_packets":rx.packets,"processed_packets":s.packets,"other_unit_packets":s.other_unit_packets,"pitch_messages":s.pitch_messages,"market_messages":s.market_messages,"applied_market_messages":s.applied_market_messages,"skipped_market_messages":s.skipped_market_messages,
         "received_payload_bytes":rx.bytes,"receive_span_ns":rx.last_rx-rx.first_rx,"receive_buffer_requested":o.receive_buffer,"receive_buffer_actual":buffer,"kernel_drop_counter_available":true,"kernel_dropped_packets":rx.kernel_drops,
         "ring_slots":o.ring_slots,"ring_high_watermark":rx.high_watermark,"ring_dropped_packets":rx.ring_drops,"truncated_packets":rx.truncated,"sequence_errors":s.sequence_errors,"missing_messages":s.missing_messages,"joined_midstream":s.joined_midstream,"out_of_order_packets":s.out_of_order_packets,"protocol_errors":s.protocol_errors,

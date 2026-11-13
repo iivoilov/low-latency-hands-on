@@ -23,6 +23,12 @@ build/play_feed simulator/play_files/pitch-v2-1m-base8m-peak20m-b10ms-e100ms_sym
 ```
 
 For a separate receiving machine, use its local NIC IPv4 address with `--interface`.
+The interface must be a concrete unicast IPv4 address. Both receivers bind to
+the configured multicast group and join it on that interface; unrelated unicast
+and other multicast destinations cannot enter the PITCH parser. Sender IP
+addresses are neither inspected nor trusted. This is destination isolation,
+not feed authentication: anyone able to inject traffic into the configured feed
+can still forge valid messages or trigger the fatal-input policy below.
 Default group/port are 239.255.0.1:30001. `--port 0` selects a local ephemeral
 port and prints it in the `READY` notification. The receiver waits indefinitely
 for the first packet; a finite benchmark stops with an error after the configured
@@ -58,8 +64,62 @@ unavailable. Ring high-watermark and drop counters are reported.
 The consumer busy-waits when the ring is empty. Thread affinity is left to the
 OS; this baseline does not select cores or tune the host. Record affinity and
 hardware when making performance comparisons. The baseline uses a reserved
-`std::unordered_map` for order IDs and ordered `std::map` price levels. Node
-allocation/deallocation for book changes remains part of the measured work.
+`std::unordered_map` for order IDs and `std::map` for price levels. Order IDs use
+SipHash-2-4 over the eight little-endian ID bytes, with a fresh 128-bit secret
+key obtained from OS entropy before RX. Entropy failure aborts startup; there is
+no predictable fallback. The table reserves the configured live-order capacity
+at load factor 1 before reception. Unit Clear retains the allocation and key.
+Keys and per-ID hash values never enter reports. JSON records
+`order_hash: "SipHash-2-4"` and `max_order_bucket_entries: null`: collisions are
+handled normally, with no bucket-length rejection. Book-node allocations remain
+part of the measured work.
+
+This hardened implementation is the selected C++ processor baseline. The earlier tree and XOR/16-entry-cutoff implementations are historical;
+the cutoff was removed because valid IDs can collide. Earlier 2026-11-12
+measurements used the default integer hash.
+The [native validation and timing report](../docs/experiments/2026-11-13-siphash.md)
+records the selected baseline and its cost against the previous hardened version.
+
+## Input validation and resource protection
+
+Both processors apply these protections in their normal ingestion paths:
+
+- Bind to the selected multicast destination/interface; do not inspect or trust
+  UDP sender addresses. Destination isolation is not feed authentication.
+- Validate datagram framing, message counts/lengths and supported field values.
+  Malformed fields, duplicate/invalid Adds and unsupported semantics remain fatal,
+  including after loss. Only missing references and positive quantity overdraws
+  can be skipped while the book is incomplete, as described under loss policies.
+- Bound packet/gap queues, timing samples and live book state; prune empty levels
+  and symbols. Whole-packet drops preserve framing and mark incomplete state.
+- Resist chosen-ID hash flooding through secret-keyed hashing: C++ uses
+  SipHash-2-4; Rust retains standard `HashMap` with `RandomState`. C++ hashes
+  integer IDs directly as eight bytes, without string conversion.
+
+The hash defense assumes the attacker can inject chosen IDs but cannot obtain
+the secret key or a useful hash/bucket/timing oracle. It makes engineered
+collisions difficult; it does not promise a constant worst-case lookup time.
+Ordinary collisions do not make an order invalid. This is not packet
+authentication, and an injector can still forge messages or trigger the existing
+fatal-input policy. No sender-IP allowlist, tree overflow or active recovery
+component is part of this baseline. The C++ eight-byte specialization follows
+the [SipHash reference](https://github.com/veorq/SipHash), with attribution in
+[the CC0 license](../docs/licenses/SipHash-CC0.txt).
+
+Both books default to a limit of 1,000,000 simultaneously live orders.
+`--max-live-orders N` sets this budget from 1 to 100,000,000; choose it for the
+feed and available memory. This is not a daily message count or cumulative
+order-ID limit: deletes and full executions release slots, and turnover can
+exceed the limit over a day. Hash-table storage is reserved before RX and
+therefore scales with the configured budget; book-node allocations remain
+timed. The synthetic generator's 4,096-order workload bound is independent.
+Exceeding the receiver's live-order budget is fatal before inserting the new
+order, including in continue mode. Existing orders can still be modified or
+removed at the limit. Empty price levels and symbols are removed immediately,
+so their counts are bounded by live orders even under symbol churn. Reports
+include the configured `max_live_orders`; sample and packet/gap queue storage remain bounded
+separately. With this order limit, aggregate quantities and order counts also
+fit their integer types for every wire quantity.
 
 For experiments, the [external affinity launcher](../benchmark/README.md#cpu-placement)
 can constrain the existing main L2 thread and RX worker before the sender starts.
@@ -144,7 +204,11 @@ In this mode the processor continues after ring/kernel loss, forward sequence
 gaps, and oversized datagrams. It drops complete datagrams, retains loss
 counters, and marks the book incomplete. Lost-order references and reductions
 that cannot be applied consistently are counted and skipped while incomplete;
-valid later updates still apply. Stale/duplicate packets are ignored rather than
+valid later updates still apply. Only missing-order references and positive
+reductions/executions exceeding the known quantity are skippable while the book
+is incomplete. Truncated message fields, invalid symbols/sides, zero reductions,
+duplicate/invalid Adds, and resource-limit errors remain fatal after loss.
+Stale/duplicate packets are ignored rather than
 applied twice. A cumulative loss marker travels with each later queued packet,
 so a gap outside the queue cannot be hidden by an otherwise valid ring read.
 
@@ -183,3 +247,12 @@ reset recovery, and concurrent variable-length ring wraparound/overflow safety.
 `processor_multicast` tests the full prepared stream against its JSON oracle,
 strict/continuing loss, packet truncation, malformed input, timeout, and
 continuous-mode shutdown over loopback. Tests use fabricated data only.
+Security regressions cover destination filtering with multiple sender IPs,
+fatal malformed fields after a gap, the order limit after loss, and symbol
+churn through every order-removal path.
+C++ native tests check the published eight-byte SipHash vector and additional
+reference outputs with varied keys, and accept 32 IDs in one actual bucket. They
+exercise modification, execution, deletion, duplicate detection, Unit Clear and
+continued processing after loss with those collisions.
+Both native suites fill the default book with one million simultaneously live
+orders, reject a further live Add, then verify capacity reuse through turnover.
