@@ -2,6 +2,7 @@
 
 #include "low_latency/pitch.hpp"
 #include "low_latency/gap_queue.hpp"
+#include "low_latency/order_id_hash.hpp"
 
 #include <array>
 #include <map>
@@ -14,11 +15,16 @@ std::uint64_t monotonic_ns(); // clock_gettime(CLOCK_MONOTONIC), shared RX/end c
 
 class OrderBook {
 public:
-    OrderBook();
+    static constexpr std::size_t default_max_orders = 1'000'000;
+    static constexpr std::size_t largest_order_limit = 100'000'000;
+    explicit OrderBook(std::size_t max_orders = default_max_orders, OrderIdHash hash = OrderIdHash{});
     void clear();
     void apply(std::span<const std::uint8_t> message);
     std::vector<BookLevel> snapshot() const; // Reporting only; outside timed updates.
     std::size_t orders() const { return orders_.size(); }
+    std::size_t symbols() const { return symbols_.size(); }
+    std::size_t max_orders() const { return max_orders_; }
+    std::size_t order_bucket(std::uint64_t id) const { return orders_.bucket(id); } // Diagnostics only.
 
 private:
     using Symbol = std::array<char, 6>;
@@ -29,8 +35,9 @@ private:
     Levels& levels(const Order& order);
     void add_level(const Order& order);
     void remove_level(const Order& order);
-    std::unordered_map<std::uint64_t, Order> orders_;
+    std::unordered_map<std::uint64_t, Order, OrderIdHash> orders_;
     std::map<Symbol, Sides> symbols_;
+    std::size_t max_orders_;
 };
 
 struct ProcessorStats {
@@ -67,7 +74,7 @@ public:
     using Clock = std::uint64_t (*)();
     Processor(std::uint8_t unit, std::uint64_t warmup, std::size_t samples,
               LossPolicy policy = LossPolicy::stop, Clock clock = monotonic_ns,
-              std::size_t gap_slots = 4096);
+              std::size_t gap_slots = 4096, std::size_t max_orders = OrderBook::default_max_orders);
     // RX timestamp is taken immediately after recvmsg returns, before validation.
     // All market messages in this datagram share that timestamp.
     void process(std::span<const std::uint8_t> payload, std::uint64_t rx_ns);

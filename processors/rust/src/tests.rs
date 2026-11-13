@@ -1,4 +1,5 @@
 use super::*;
+const TEST_MAX_ORDERS: usize = 4096;
 use std::sync::atomic::{AtomicU64, Ordering};
 fn put(bytes: &mut [u8], offset: usize, value: u64, width: usize) {
     for i in 0..width {
@@ -57,11 +58,11 @@ fn zero() -> u64 {
     0
 }
 fn engine(policy: LossPolicy, slots: usize) -> Processor {
-    Processor::new(1, 0, 100, policy, zero, slots).unwrap()
+    Processor::new(1, 0, 100, policy, zero, slots, TEST_MAX_ORDERS).unwrap()
 }
 #[test]
 fn l2_transitions_and_invalid_updates() {
-    let mut b = OrderBook::default();
+    let mut b = OrderBook::new(TEST_MAX_ORDERS).unwrap();
     b.apply(&event(0x21, 1, 100, 100000, b'B')).unwrap();
     b.apply(&event(0x21, 2, 50, 100000, b'B')).unwrap();
     b.apply(&event(0x21, 3, 40, 100200, b'S')).unwrap();
@@ -102,7 +103,7 @@ fn tick() -> u64 {
 #[test]
 fn timing_warmup_exact_percentiles_and_bounded_storage() {
     TICKS.store(0, Ordering::Relaxed);
-    let mut p = Processor::new(1, 1, 1000, LossPolicy::Stop, tick, 64).unwrap();
+    let mut p = Processor::new(1, 1, 1000, LossPolicy::Stop, tick, 64, TEST_MAX_ORDERS).unwrap();
     p.process(&datagram(1, vec![control(0x20), control(0x97), add(1)]), 0)
         .unwrap();
     assert_eq!(TICKS.load(Ordering::Relaxed), 0);
@@ -342,4 +343,121 @@ fn concurrent_variable_packets_and_gap_handoff() {
         assert_eq!(gap.detected_rx_ns, n as u64 * 10);
     }
     worker.join().unwrap();
+}
+
+#[test]
+fn book_bounds_and_symbol_churn() {
+    let mut b = OrderBook::new(TEST_MAX_ORDERS).unwrap();
+    for i in 1..=TEST_MAX_ORDERS as u64 {
+        let mut m = add(i * 35933);
+        m[19..25].copy_from_slice(format!("{i:06}").as_bytes());
+        b.apply(&m).unwrap();
+    }
+    let before = b.snapshot();
+    assert!(b.apply(&add(1)).is_err());
+    assert_eq!(b.order_count(), TEST_MAX_ORDERS);
+    assert_eq!(b.snapshot(), before);
+    b.apply(&event(0x29, 35933, 0, 0, b'B')).unwrap();
+    b.apply(&add(1)).unwrap();
+    assert_eq!(b.symbol_count(), TEST_MAX_ORDERS);
+    b.clear();
+    for i in 0..10000 {
+        let mut m = add(1);
+        m[19..25].copy_from_slice(format!("{i:06}").as_bytes());
+        b.apply(&m).unwrap();
+        let kind = [0x29, 0x27, 0x25, 0x23][i % 4];
+        b.apply(&event(kind, 1, if kind == 0x27 { 0 } else { 100 }, 0, b'B'))
+            .unwrap();
+        assert_eq!((b.order_count(), b.symbol_count()), (0, 0));
+    }
+    let mut p = engine(LossPolicy::Continue, 1);
+    p.process(&datagram(1, vec![control(0x97)]), 0).unwrap();
+    for i in 0..TEST_MAX_ORDERS as u32 {
+        p.process(&datagram(i + 2, vec![add(i as u64 + 1)]), 0)
+            .unwrap();
+    }
+    p.note_loss();
+    assert!(p.process(&datagram(4098, vec![add(99999)]), 0).is_err());
+    assert_eq!(p.stats.protocol_errors, 1);
+    assert_eq!(p.stats.skipped_market_messages, 0);
+    assert_eq!(p.book.order_count(), TEST_MAX_ORDERS);
+}
+
+#[test]
+fn malformed_fields_remain_fatal_after_loss() {
+    let mut invalid = Vec::new();
+    for kind in [0x20, 0x97, 0x21, 0x23, 0x25, 0x27, 0x29] {
+        let full = if matches!(kind, 0x20 | 0x97) {
+            control(kind)
+        } else {
+            event(kind, 1, 100, 100000, b'B')
+        };
+        for len in 2..full.len() {
+            let mut truncated = full[..len].to_vec();
+            truncated[0] = len as u8;
+            invalid.push(truncated.clone());
+            if len >= 14 {
+                put(&mut truncated, 6, 99, 8);
+                invalid.push(truncated);
+            }
+        }
+    }
+    invalid.push(event(0x21, 2, 0, 100000, b'B'));
+    invalid.push(event(0x21, 2, 100, 100000, b'X'));
+    for symbol in [b"      ", b"\0EST  "] {
+        let mut m = add(2);
+        m[19..25].copy_from_slice(symbol);
+        invalid.push(m);
+    }
+    invalid.push(add(1));
+    for kind in [0x23, 0x25] {
+        for id in [1, 99] {
+            invalid.push(event(kind, id, 0, 0, b'B'));
+        }
+    }
+    for m in invalid {
+        let mut p = engine(LossPolicy::Continue, 1);
+        p.process(&datagram(1, vec![control(0x97), add(1)]), 0)
+            .unwrap();
+        assert!(p.process(&datagram(4, vec![m]), 0).is_err());
+        assert_eq!(p.stats.protocol_errors, 1);
+        assert_eq!(p.stats.skipped_market_messages, 0);
+        assert!(!p.book_current());
+    }
+    let mut p = engine(LossPolicy::Continue, 1);
+    p.process(&datagram(1, vec![control(0x97), add(1)]), 0)
+        .unwrap();
+    p.process(
+        &datagram(
+            4,
+            vec![
+                event(0x25, 1, 101, 0, b'B'),
+                event(0x25, 99, 1, 0, b'B'),
+                event(0x25, 1, 1, 0, b'B'),
+            ],
+        ),
+        0,
+    )
+    .unwrap();
+    assert_eq!(p.stats.skipped_market_messages, 2);
+    assert_eq!(p.book.snapshot()[0].quantity, 99);
+}
+
+#[test]
+fn million_live_orders_and_turnover() {
+    assert!(OrderBook::new(0).is_err());
+    assert!(OrderBook::new(LARGEST_ORDER_LIMIT + 1).is_err());
+    let mut b = OrderBook::default();
+    assert_eq!(b.max_orders(), 1_000_000);
+    for id in 1..=b.max_orders() as u64 {
+        b.apply(&add(id)).unwrap();
+    }
+    assert_eq!(b.order_count(), 1_000_000);
+    assert_eq!(b.snapshot()[0].orders, 1_000_000);
+    assert!(b.apply(&add(1_000_001)).is_err());
+    for id in 1..=1000 {
+        b.apply(&event(0x29, id, 0, 0, b'B')).unwrap();
+        b.apply(&add(b.max_orders() as u64 + id)).unwrap();
+    }
+    assert_eq!(b.order_count(), b.max_orders());
 }

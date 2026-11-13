@@ -1,6 +1,7 @@
 #include "low_latency/processor.hpp"
 
 #include <time.h>
+#include <sys/random.h>
 
 #include <algorithm>
 #include <cerrno>
@@ -10,6 +11,11 @@
 
 namespace low_latency {
 namespace {
+
+class PartialBookError : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
 
 std::uint64_t le(const std::uint8_t* data, unsigned width) {
     std::uint64_t value = 0;
@@ -23,6 +29,14 @@ void require_size(std::span<const std::uint8_t> message, std::size_t minimum) {
 
 } // namespace
 
+OrderIdHash::OrderIdHash() {
+    // getentropy supplies all requested bytes or fails; never fall back to a
+    // timestamp, PID, or fixed seed. No seed is logged or read from the feed.
+    if (getentropy(key_.data(), sizeof(key_)) != 0) {
+        throw std::system_error(errno, std::generic_category(), "getentropy for order hash");
+    }
+}
+
 std::uint64_t monotonic_ns() {
     timespec time{};
     if (clock_gettime(CLOCK_MONOTONIC, &time) != 0) {
@@ -31,7 +45,13 @@ std::uint64_t monotonic_ns() {
     return static_cast<std::uint64_t>(time.tv_sec) * 1'000'000'000 + static_cast<std::uint64_t>(time.tv_nsec);
 }
 
-OrderBook::OrderBook() { orders_.reserve(4096); }
+OrderBook::OrderBook(std::size_t max_orders, OrderIdHash hash) : orders_(0, hash), max_orders_(max_orders) {
+    if (max_orders == 0 || max_orders > largest_order_limit) {
+        throw std::invalid_argument("Need 1..100000000 maximum live orders");
+    }
+    orders_.max_load_factor(1.0F);
+    orders_.reserve(max_orders_); // Reserve before RX to avoid growth during processing.
+}
 void OrderBook::clear() { orders_.clear(); symbols_.clear(); }
 
 OrderBook::Levels& OrderBook::levels(const Order& order) {
@@ -50,14 +70,22 @@ void OrderBook::remove_level(const Order& order) {
     const auto found = side.find(order.price);
     found->second.quantity -= order.quantity;
     if (--found->second.orders == 0) { side.erase(found); }
+    const auto symbol = symbols_.find(order.symbol);
+    if (symbol->second.bids.empty() && symbol->second.asks.empty()) { symbols_.erase(symbol); }
 }
 
 void OrderBook::apply(std::span<const std::uint8_t> message) {
-    require_size(message, 14);
+    require_size(message, 2);
     const auto type = message[1];
+    const std::size_t minimum = type == 0x21 ? 34 : type == 0x23 ? 26 : type == 0x25 ? 18 :
+                                type == 0x27 ? 27 : type == 0x29 ? 14 : 0;
+    if (minimum == 0) { throw std::runtime_error("Unsupported PITCH market message"); }
+    require_size(message, minimum); // Validate even when the referenced order is absent.
+    if ((type == 0x23 || type == 0x25) && le(message.data() + 14, 4) == 0) {
+        throw std::runtime_error("Invalid zero reduced/executed quantity");
+    }
     const auto id = le(message.data() + 6, 8);
     if (type == 0x21) {
-        require_size(message, 34);
         Order order{};
         std::memcpy(order.symbol.data(), message.data() + 19, 6);
         order.side = static_cast<char>(message[14]);
@@ -74,15 +102,15 @@ void OrderBook::apply(std::span<const std::uint8_t> message) {
             if (ch != ' ') { visible_symbol = true; }
         }
         if (!visible_symbol) { throw std::runtime_error("Empty PITCH symbol"); }
+        if (orders_.size() == max_orders_) { throw std::runtime_error("PITCH live order limit exceeded"); }
         orders_.emplace(id, order);
         add_level(order);
         return;
     }
     const auto found = orders_.find(id);
-    if (found == orders_.end()) { throw std::runtime_error("PITCH update references a missing order"); }
+    if (found == orders_.end()) { throw PartialBookError("PITCH update references a missing order"); }
     auto& order = found->second;
     if (type == 0x27) {
-        require_size(message, 27);
         const auto quantity = static_cast<std::uint32_t>(le(message.data() + 14, 4));
         remove_level(order);
         if (quantity == 0) { orders_.erase(found); return; }
@@ -90,9 +118,8 @@ void OrderBook::apply(std::span<const std::uint8_t> message) {
         order.price = le(message.data() + 18, 8);
         add_level(order);
     } else if (type == 0x23 || type == 0x25) {
-        require_size(message, type == 0x23 ? 26 : 18);
         const auto quantity = static_cast<std::uint32_t>(le(message.data() + 14, 4));
-        if (quantity == 0 || quantity > order.quantity) { throw std::runtime_error("Invalid reduced/executed quantity"); }
+        if (quantity > order.quantity) { throw PartialBookError("Reduced/executed quantity exceeds known order"); }
         levels(order).at(order.price).quantity -= quantity;
         order.quantity -= quantity;
         if (order.quantity == 0) {
@@ -123,8 +150,8 @@ std::vector<BookLevel> OrderBook::snapshot() const {
 }
 
 Processor::Processor(std::uint8_t unit, std::uint64_t warmup, std::size_t samples,
-                     LossPolicy policy, Clock clock, std::size_t gap_slots)
-    : unit_(unit), warmup_(warmup), target_(samples), clock_(clock), policy_(policy), gaps_(gap_slots) {
+                     LossPolicy policy, Clock clock, std::size_t gap_slots, std::size_t max_orders)
+    : unit_(unit), warmup_(warmup), target_(samples), clock_(clock), policy_(policy), gaps_(gap_slots), book_(max_orders) {
     if (unit == 0 || samples == 0 || !clock) { throw std::invalid_argument("Need nonzero unit/sample target and clock"); }
     samples_.reserve(target_);
 }
@@ -179,7 +206,7 @@ void Processor::process(std::span<const std::uint8_t> payload, std::uint64_t rx_
                 }
                 bool applied = true;
                 try { book_.apply(message); }
-                catch (const std::runtime_error&) {
+                catch (const PartialBookError&) {
                     if (policy_ != LossPolicy::continue_processing || !dirty_) { throw; }
                     applied = false;
                     ++stats_.skipped_market_messages;

@@ -5,6 +5,13 @@ install packages, change NIC settings or reserve CPUs. [Usage](../docs/usage.md)
 covers local playback and the [experiment index](../docs/experiments/README.md)
 describes the measured configurations.
 
+The selected C++ baseline uses SipHash-2-4 with a secret per-book key and no
+bucket-length rejection. Both processors default to a million live orders and
+include application-level validation/resource limits. See the
+[security description](../processors/README.md#input-validation-and-resource-protection)
+and [native hardening comparison](../docs/experiments/2026-11-13-siphash.md).
+Historical results retain their measured hash, capacity and validation behavior.
+
 ## Prepare identical source trees
 
 Copy this source tree to both hosts, or clone the same published revision there.

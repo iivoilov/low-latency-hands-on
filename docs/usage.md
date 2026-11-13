@@ -68,6 +68,19 @@ fully loaded before sending. `--spin` busy-waits; delayed sends stretch the
 schedule instead of producing catch-up bursts. Inspect achieved Mbps and slip.
 `--no-send` validates a PCAP without sending or waiting.
 
+Both processors default to **1,000,000 simultaneously live orders**. Use
+`--max-live-orders N` (1..100000000) to select a different memory/state budget.
+Deletes and full executions release capacity; daily turnover is not limited by
+this count. Hash-table capacity is reserved before RX. Empty price levels and
+symbols are removed as orders disappear.
+
+C++ uses secret-keyed SipHash-2-4 for order IDs; Rust retains standard
+`HashMap` / `RandomState`. Both accept hash collisions normally. Framing/field
+validation, destination isolation without sender-IP trust, and bounded state
+are part of both implementations. See the
+[security description](../processors/README.md#input-validation-and-resource-protection)
+for the threat model and fatal-versus-skippable error policy.
+
 Loopback checks functionality; it is not equivalent to the separate-host results.
 For two machines, pass each machine's own interface IPv4 address to its process.
 Ensure same-subnet multicast connectivity and matching group/port. The guide's

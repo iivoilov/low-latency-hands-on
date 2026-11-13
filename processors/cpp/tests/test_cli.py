@@ -21,7 +21,10 @@ def cli(directory):
     assert result.returncode == 0 and 'Two threads:' in result.stdout
     for args in (['--unit', 0], ['--messages', 0], ['--ring-slots', 3], ['--gap-slots', 3], ['--gap-slots', 0],
                  ['--idle-timeout-ms', 0], ['--on-loss', 'overwrite'],
-                 ['--group', '127.0.0.1'], ['--unknown', 'x']):
+                 ['--group', '127.0.0.1'], ['--unknown', 'x'],
+                 ['--interface', '0.0.0.0'], ['--interface', '239.255.0.1'],
+                 ['--interface', '255.255.255.255'], ['--max-live-orders', 0],
+                 ['--max-live-orders', 100000001]):
         result = subprocess.run([PROCESSOR, *map(str, args)], capture_output=True, text=True, timeout=3)
         assert result.returncode != 0, (args, result.stdout, result.stderr)
     existing = directory / 'existing.json'
@@ -82,12 +85,72 @@ def packet(sequence, *messages):
     return struct.pack('<HBBI', len(payload) + 8, len(messages), 1, sequence) + payload
 
 
-def send(port, packets):
+def send(port, packets, source='127.0.0.1', group='239.255.0.1'):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sender:
+        sender.bind((source, 0))
         sender.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton('127.0.0.1'))
         sender.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
         for payload in packets:
-            sender.sendto(payload, ('239.255.0.1', port))
+            sender.sendto(payload, (group, port))
+
+
+def filtered_traffic(directory):
+    for source in ('127.0.0.1', '127.0.0.2'):
+        report = directory / ('filter-' + source + '.json')
+        process, port = start(report, '--warmup-messages', 0, '--messages', 1)
+        try:
+            forged = packet(1, message(0x97), message(0x21, 99))
+            hostile = [forged, b'broken', b'x' * 2000]
+            send(port, hostile, source=source, group='127.0.0.1') # Unicast is not feed input.
+            send(port, hostile, source=source, group='239.255.0.2')
+            time.sleep(0.1)
+            assert process.poll() is None, 'Unrelated traffic reached PITCH processing'
+            send(port, [packet(1, message(0x97), message(0x21, 1))], source=source)
+            result, _, _ = finish(process, report, success=True)
+            assert result['benchmark_valid'] and result['book_current']
+            assert result['max_live_orders'] == 1000000
+            if result['implementation'] == 'cpp-os':
+                assert result['order_container'] == 'std::unordered_map'
+                assert result['order_hash'] == 'SipHash-2-4'
+                assert result['max_order_bucket_entries'] is None
+            assert result['received_packets'] == 1 and result['protocol_errors'] == 0
+            assert result['truncated_packets'] == 0 and result['live_orders'] == 1
+        finally:
+            cleanup(process)
+
+
+def hostile_feed(directory):
+    initial = packet(1, message(0x97), message(0x21, 1))
+    for name, invalid in [('truncated-add', bytes([2, 0x21])),
+                          ('truncated-missing-modify', bytes([14, 0x27]) + bytes(12)),
+                          ('invalid-add', message(0x21, 2, 0)),
+                          ('duplicate-add', message(0x21, 1))]:
+        report = directory / (name + '.json')
+        process, port = start(report, '--on-loss', 'continue', '--continuous', '--warmup-messages', 0)
+        try:
+            send(port, [initial, packet(4, invalid)])
+            result, _, _ = finish(process, report, success=False)
+            assert result['protocol_errors'] == 1 and result['skipped_market_messages'] == 0
+            assert not result['book_current'] and result['live_orders'] == 1
+        finally:
+            cleanup(process)
+    report = directory / 'book-limit.json'
+    process, port = start(report, '--on-loss', 'continue', '--continuous', '--warmup-messages', 0,
+                          '--max-live-orders', 4096)
+    try:
+        send(port, [packet(1, message(0x97))])
+        # Introduce a gap so the resource limit is also exercised with a dirty book.
+        sequence = 3
+        for first in range(1, 4098, 40):
+            messages = [message(0x21, i) for i in range(first, min(first + 40, 4098))]
+            send(port, [packet(sequence, *messages)])
+            sequence += len(messages)
+        result, _, _ = finish(process, report, success=False)
+        assert result['live_orders'] == 4096 and result['max_live_orders'] == 4096
+        assert result['protocol_errors'] == 1 and result['skipped_market_messages'] == 0
+        assert 'limit exceeded' in result['error'] and not result['book_current']
+    finally:
+        cleanup(process)
 
 
 def full_stream(directory):
@@ -207,6 +270,8 @@ with tempfile.TemporaryDirectory(prefix='os-processor-') as temporary:
         full_stream(directory)
         loss_cases(directory)
         continuous(directory)
+        filtered_traffic(directory)
+        hostile_feed(directory)
     else:
         cli(directory)
 print('OS-socket processor checks passed')
