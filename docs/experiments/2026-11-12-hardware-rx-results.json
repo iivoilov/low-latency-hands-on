@@ -1,0 +1,681 @@
+{
+  "date": "2026-11-12",
+  "workload": {
+    "format_version": 2,
+    "source": "synthetic_l2",
+    "pcap": "pitch-v2-1m-base4m-peak20m-b5ms-e100ms_sym3_seed43.pcap",
+    "rate_basis": "pitch_udp_payload_bits",
+    "background_mbps": 4,
+    "burst_mbps": 20,
+    "cycle_average_mbps": 4.8,
+    "burst_ms": 5,
+    "burst_every_ms": 100,
+    "updates": 1000000,
+    "initialization_messages": 180,
+    "initialization_packets": 23,
+    "market_messages": 1000180,
+    "pitch_messages": 1000224,
+    "packets": 125024,
+    "payload_bytes": 25667640,
+    "duration_ns": 42775280000,
+    "finite_average_mbps": 4.80046232309876,
+    "levels_per_side": 10,
+    "orders_per_level": 3,
+    "events_per_packet": 8,
+    "unit": 1,
+    "seed": 43,
+    "symbols": [
+      "AAPL",
+      "MSFT",
+      "SPY"
+    ],
+    "final_book": [
+      {
+        "symbol": "AAPL",
+        "side": "B",
+        "price_1e4": 999900,
+        "quantity": 1995,
+        "orders": 3
+      },
+      {
+        "symbol": "AAPL",
+        "side": "B",
+        "price_1e4": 999800,
+        "quantity": 5800,
+        "orders": 4
+      },
+      {
+        "symbol": "AAPL",
+        "side": "B",
+        "price_1e4": 999600,
+        "quantity": 3300,
+        "orders": 2
+      },
+      {
+        "symbol": "AAPL",
+        "side": "B",
+        "price_1e4": 999500,
+        "quantity": 496,
+        "orders": 3
+      },
+      {
+        "symbol": "AAPL",
+        "side": "B",
+        "price_1e4": 999400,
+        "quantity": 2000,
+        "orders": 3
+      },
+      {
+        "symbol": "AAPL",
+        "side": "B",
+        "price_1e4": 999300,
+        "quantity": 3840,
+        "orders": 6
+      },
+      {
+        "symbol": "AAPL",
+        "side": "B",
+        "price_1e4": 999200,
+        "quantity": 1090,
+        "orders": 1
+      },
+      {
+        "symbol": "AAPL",
+        "side": "B",
+        "price_1e4": 999100,
+        "quantity": 5242,
+        "orders": 7
+      },
+      {
+        "symbol": "AAPL",
+        "side": "B",
+        "price_1e4": 999000,
+        "quantity": 50,
+        "orders": 1
+      },
+      {
+        "symbol": "AAPL",
+        "side": "S",
+        "price_1e4": 1000100,
+        "quantity": 2245,
+        "orders": 2
+      },
+      {
+        "symbol": "AAPL",
+        "side": "S",
+        "price_1e4": 1000200,
+        "quantity": 2128,
+        "orders": 4
+      },
+      {
+        "symbol": "AAPL",
+        "side": "S",
+        "price_1e4": 1000300,
+        "quantity": 2590,
+        "orders": 3
+      },
+      {
+        "symbol": "AAPL",
+        "side": "S",
+        "price_1e4": 1000400,
+        "quantity": 4942,
+        "orders": 4
+      },
+      {
+        "symbol": "AAPL",
+        "side": "S",
+        "price_1e4": 1000500,
+        "quantity": 4719,
+        "orders": 4
+      },
+      {
+        "symbol": "AAPL",
+        "side": "S",
+        "price_1e4": 1000700,
+        "quantity": 1966,
+        "orders": 4
+      },
+      {
+        "symbol": "AAPL",
+        "side": "S",
+        "price_1e4": 1000800,
+        "quantity": 1891,
+        "orders": 3
+      },
+      {
+        "symbol": "AAPL",
+        "side": "S",
+        "price_1e4": 1000900,
+        "quantity": 138,
+        "orders": 1
+      },
+      {
+        "symbol": "AAPL",
+        "side": "S",
+        "price_1e4": 1001000,
+        "quantity": 5864,
+        "orders": 5
+      },
+      {
+        "symbol": "MSFT",
+        "side": "B",
+        "price_1e4": 1099900,
+        "quantity": 4182,
+        "orders": 3
+      },
+      {
+        "symbol": "MSFT",
+        "side": "B",
+        "price_1e4": 1099800,
+        "quantity": 258,
+        "orders": 1
+      },
+      {
+        "symbol": "MSFT",
+        "side": "B",
+        "price_1e4": 1099700,
+        "quantity": 4989,
+        "orders": 4
+      },
+      {
+        "symbol": "MSFT",
+        "side": "B",
+        "price_1e4": 1099600,
+        "quantity": 980,
+        "orders": 4
+      },
+      {
+        "symbol": "MSFT",
+        "side": "B",
+        "price_1e4": 1099500,
+        "quantity": 567,
+        "orders": 3
+      },
+      {
+        "symbol": "MSFT",
+        "side": "B",
+        "price_1e4": 1099400,
+        "quantity": 68,
+        "orders": 2
+      },
+      {
+        "symbol": "MSFT",
+        "side": "B",
+        "price_1e4": 1099300,
+        "quantity": 2853,
+        "orders": 4
+      },
+      {
+        "symbol": "MSFT",
+        "side": "B",
+        "price_1e4": 1099200,
+        "quantity": 200,
+        "orders": 2
+      },
+      {
+        "symbol": "MSFT",
+        "side": "B",
+        "price_1e4": 1099100,
+        "quantity": 3100,
+        "orders": 2
+      },
+      {
+        "symbol": "MSFT",
+        "side": "B",
+        "price_1e4": 1099000,
+        "quantity": 911,
+        "orders": 4
+      },
+      {
+        "symbol": "MSFT",
+        "side": "S",
+        "price_1e4": 1100100,
+        "quantity": 1761,
+        "orders": 3
+      },
+      {
+        "symbol": "MSFT",
+        "side": "S",
+        "price_1e4": 1100200,
+        "quantity": 1913,
+        "orders": 5
+      },
+      {
+        "symbol": "MSFT",
+        "side": "S",
+        "price_1e4": 1100300,
+        "quantity": 4600,
+        "orders": 4
+      },
+      {
+        "symbol": "MSFT",
+        "side": "S",
+        "price_1e4": 1100400,
+        "quantity": 2968,
+        "orders": 4
+      },
+      {
+        "symbol": "MSFT",
+        "side": "S",
+        "price_1e4": 1100500,
+        "quantity": 1138,
+        "orders": 2
+      },
+      {
+        "symbol": "MSFT",
+        "side": "S",
+        "price_1e4": 1100700,
+        "quantity": 1222,
+        "orders": 3
+      },
+      {
+        "symbol": "MSFT",
+        "side": "S",
+        "price_1e4": 1100800,
+        "quantity": 2181,
+        "orders": 2
+      },
+      {
+        "symbol": "MSFT",
+        "side": "S",
+        "price_1e4": 1100900,
+        "quantity": 3074,
+        "orders": 4
+      },
+      {
+        "symbol": "MSFT",
+        "side": "S",
+        "price_1e4": 1101000,
+        "quantity": 766,
+        "orders": 3
+      },
+      {
+        "symbol": "SPY",
+        "side": "B",
+        "price_1e4": 1199900,
+        "quantity": 2641,
+        "orders": 2
+      },
+      {
+        "symbol": "SPY",
+        "side": "B",
+        "price_1e4": 1199700,
+        "quantity": 1972,
+        "orders": 2
+      },
+      {
+        "symbol": "SPY",
+        "side": "B",
+        "price_1e4": 1199600,
+        "quantity": 600,
+        "orders": 1
+      },
+      {
+        "symbol": "SPY",
+        "side": "B",
+        "price_1e4": 1199500,
+        "quantity": 2421,
+        "orders": 3
+      },
+      {
+        "symbol": "SPY",
+        "side": "B",
+        "price_1e4": 1199400,
+        "quantity": 3255,
+        "orders": 8
+      },
+      {
+        "symbol": "SPY",
+        "side": "B",
+        "price_1e4": 1199300,
+        "quantity": 354,
+        "orders": 2
+      },
+      {
+        "symbol": "SPY",
+        "side": "B",
+        "price_1e4": 1199200,
+        "quantity": 1283,
+        "orders": 3
+      },
+      {
+        "symbol": "SPY",
+        "side": "B",
+        "price_1e4": 1199100,
+        "quantity": 2555,
+        "orders": 3
+      },
+      {
+        "symbol": "SPY",
+        "side": "B",
+        "price_1e4": 1199000,
+        "quantity": 4420,
+        "orders": 6
+      },
+      {
+        "symbol": "SPY",
+        "side": "S",
+        "price_1e4": 1200100,
+        "quantity": 1417,
+        "orders": 3
+      },
+      {
+        "symbol": "SPY",
+        "side": "S",
+        "price_1e4": 1200200,
+        "quantity": 1900,
+        "orders": 1
+      },
+      {
+        "symbol": "SPY",
+        "side": "S",
+        "price_1e4": 1200300,
+        "quantity": 2169,
+        "orders": 6
+      },
+      {
+        "symbol": "SPY",
+        "side": "S",
+        "price_1e4": 1200400,
+        "quantity": 3558,
+        "orders": 5
+      },
+      {
+        "symbol": "SPY",
+        "side": "S",
+        "price_1e4": 1200600,
+        "quantity": 3967,
+        "orders": 3
+      },
+      {
+        "symbol": "SPY",
+        "side": "S",
+        "price_1e4": 1200700,
+        "quantity": 4601,
+        "orders": 4
+      },
+      {
+        "symbol": "SPY",
+        "side": "S",
+        "price_1e4": 1200800,
+        "quantity": 1900,
+        "orders": 1
+      },
+      {
+        "symbol": "SPY",
+        "side": "S",
+        "price_1e4": 1200900,
+        "quantity": 3200,
+        "orders": 3
+      },
+      {
+        "symbol": "SPY",
+        "side": "S",
+        "price_1e4": 1201000,
+        "quantity": 2396,
+        "orders": 4
+      }
+    ]
+  },
+  "workload_sha256": "16262090907e2e810649cee36878ea5405927c711e524f58e4c3772028428726",
+  "interval": "receiver NIC hardware timestamp to CLOCK_MONOTONIC immediately after recvmsg",
+  "summary_method": "median and range of per-run nearest-rank percentiles, not pooled",
+  "summary": {
+    "median_per_run_nic_user_p50_ns": 43716.48150124978,
+    "median_per_run_nic_user_p99_ns": 164520.46742672296,
+    "median_per_run_nic_user_p99_9_ns": 1390282.0982326283,
+    "min_per_run_nic_user_p99_9_ns": 893022.7591816067,
+    "max_per_run_nic_user_p99_9_ns": 1547370.969481087,
+    "max_phc_read_half_width_ns": 2785.5,
+    "max_phc_leave_one_out_residual_ns": 61.35784715855573
+  },
+  "sender": "ryzen",
+  "receiver": "epyc",
+  "rx_cpu": 2,
+  "calibration_cpu": 15,
+  "bond_mode": "active-backup",
+  "settings_restored": true,
+  "bond_membership_changed": false,
+  "runs": [
+    {
+      "repeat": 1,
+      "valid": true,
+      "packets": 125024,
+      "nic_user_p50_ns": 43716.48150124978,
+      "nic_user_p99_ns": 164520.46742672296,
+      "nic_user_p99_9_ns": 893022.7591816067,
+      "nic_user_max_ns": 6000547.52859725,
+      "nic_user_mean_ns": 56821.602500077206,
+      "nic_kernel_p50_ns": 24559.89311579777,
+      "nic_kernel_p99_ns": 119284.17779357999,
+      "nic_kernel_p99_9_ns": 195010.91916124747,
+      "nic_kernel_max_ns": 898282.9634279608,
+      "nic_kernel_mean_ns": 34400.80139788883,
+      "kernel_user_p50_ns": 18490,
+      "kernel_user_p99_ns": 56351,
+      "kernel_user_p99_9_ns": 841554,
+      "kernel_user_max_ns": 5974569,
+      "kernel_user_mean_ns": 22420.80110218838,
+      "phc_read_max_half_width_ns": 2715.0,
+      "phc_max_leave_one_out_residual_ns": 54.83290849391233,
+      "sender_mbps": 4.80038,
+      "capture": {
+        "capture_valid": true,
+        "mode": "hardware",
+        "packets": 125024,
+        "expected_packets": 125024,
+        "pitch_messages": 1000224,
+        "hardware_timestamps": 125024,
+        "software_timestamps": 125024,
+        "kernel_drops": 0,
+        "sequence_errors": 0,
+        "missing_messages": 0,
+        "receive_buffer_actual": 425984,
+        "rx_cpu": 2,
+        "calibration_cpu": 15,
+        "calibration_anchors": 426,
+        "error": ""
+      },
+      "hardware_mapping": {
+        "method": "piecewise-linear midpoint of minimum-width MONOTONIC/PHC/MONOTONIC brackets (25 candidates)",
+        "anchors": 426,
+        "read_half_width_ns": {
+          "samples": 426,
+          "min_ns": 2310.0,
+          "p50_ns": 2644.5,
+          "p99_ns": 2695.0,
+          "p99_9_ns": 2715.0,
+          "max_ns": 2715.0,
+          "mean_ns": 2640.794600938967
+        },
+        "interpolated_half_width_ns": {
+          "samples": 125024,
+          "min_ns": 2310.7232407516226,
+          "p50_ns": 2642.9067275747184,
+          "p99_ns": 2687.4122874514533,
+          "p99_9_ns": 2709.3279884814715,
+          "max_ns": 2714.9759362907726,
+          "mean_ns": 2640.994289565801
+        },
+        "leave_one_out_residual_abs_ns": {
+          "samples": 424,
+          "min_ns": 0.043262855865577876,
+          "p50_ns": 7.322267358191198,
+          "p99_ns": 46.65933575917427,
+          "p99_9_ns": 54.83290849391233,
+          "max_ns": 54.83290849391233,
+          "mean_ns": 10.045859559107686
+        },
+        "missing_hardware_timestamps": 0,
+        "outside_calibration_interval": 0,
+        "negative_latency_estimates": 0,
+        "negative_beyond_bracket": 0,
+        "note": "Bracket half-widths describe read uncertainty. Interpolation assumes smooth drift; residuals are diagnostic, not a certified error bound."
+      },
+      "realtime_monotonic_mapping": {
+        "valid": true,
+        "uncertainty_half_width_ns": 20.0
+      }
+    },
+    {
+      "repeat": 2,
+      "valid": true,
+      "packets": 125024,
+      "nic_user_p50_ns": 43202.3115646175,
+      "nic_user_p99_ns": 165435.98204560843,
+      "nic_user_p99_9_ns": 1547370.969481087,
+      "nic_user_max_ns": 11471843.131158683,
+      "nic_user_mean_ns": 58451.46497806901,
+      "nic_kernel_p50_ns": 23927.185595432937,
+      "nic_kernel_p99_ns": 118561.42372444966,
+      "nic_kernel_p99_9_ns": 217020.73874165295,
+      "nic_kernel_max_ns": 2285619.4360109833,
+      "nic_kernel_mean_ns": 34189.02977362826,
+      "kernel_user_p50_ns": 18451,
+      "kernel_user_p99_ns": 59261,
+      "kernel_user_p99_9_ns": 1443071,
+      "kernel_user_max_ns": 11447574,
+      "kernel_user_mean_ns": 24262.435204440746,
+      "phc_read_max_half_width_ns": 2715.0,
+      "phc_max_leave_one_out_residual_ns": 61.35784715855573,
+      "sender_mbps": 4.80037,
+      "capture": {
+        "capture_valid": true,
+        "mode": "hardware",
+        "packets": 125024,
+        "expected_packets": 125024,
+        "pitch_messages": 1000224,
+        "hardware_timestamps": 125024,
+        "software_timestamps": 125024,
+        "kernel_drops": 0,
+        "sequence_errors": 0,
+        "missing_messages": 0,
+        "receive_buffer_actual": 425984,
+        "rx_cpu": 2,
+        "calibration_cpu": 15,
+        "calibration_anchors": 426,
+        "error": ""
+      },
+      "hardware_mapping": {
+        "method": "piecewise-linear midpoint of minimum-width MONOTONIC/PHC/MONOTONIC brackets (25 candidates)",
+        "anchors": 426,
+        "read_half_width_ns": {
+          "samples": 426,
+          "min_ns": 2315.0,
+          "p50_ns": 2645.0,
+          "p99_ns": 2715.0,
+          "p99_9_ns": 2715.0,
+          "max_ns": 2715.0,
+          "mean_ns": 2638.8403755868544
+        },
+        "interpolated_half_width_ns": {
+          "samples": 125024,
+          "min_ns": 2315.01750947499,
+          "p50_ns": 2643.394454508936,
+          "p99_ns": 2694.204939771057,
+          "p99_9_ns": 2712.590572085822,
+          "max_ns": 2714.9599271445786,
+          "mean_ns": 2639.010729496079
+        },
+        "leave_one_out_residual_abs_ns": {
+          "samples": 424,
+          "min_ns": 0.06680963894143588,
+          "p50_ns": 6.88519850348257,
+          "p99_ns": 46.804345805139064,
+          "p99_9_ns": 61.35784715855573,
+          "max_ns": 61.35784715855573,
+          "mean_ns": 9.659371101308203
+        },
+        "missing_hardware_timestamps": 0,
+        "outside_calibration_interval": 0,
+        "negative_latency_estimates": 0,
+        "negative_beyond_bracket": 0,
+        "note": "Bracket half-widths describe read uncertainty. Interpolation assumes smooth drift; residuals are diagnostic, not a certified error bound."
+      },
+      "realtime_monotonic_mapping": {
+        "valid": true,
+        "uncertainty_half_width_ns": 20.0
+      }
+    },
+    {
+      "repeat": 3,
+      "valid": true,
+      "packets": 125024,
+      "nic_user_p50_ns": 43820.387342990296,
+      "nic_user_p99_ns": 163175.27337360772,
+      "nic_user_p99_9_ns": 1390282.0982326283,
+      "nic_user_max_ns": 6772687.73414139,
+      "nic_user_mean_ns": 57148.045727177174,
+      "nic_kernel_p50_ns": 24335.686369972722,
+      "nic_kernel_p99_ns": 118845.77261618152,
+      "nic_kernel_p99_9_ns": 195680.68217039737,
+      "nic_kernel_max_ns": 3718540.529789466,
+      "nic_kernel_mean_ns": 34450.342838131866,
+      "kernel_user_p50_ns": 18740,
+      "kernel_user_p99_ns": 57491,
+      "kernel_user_p99_9_ns": 1033859,
+      "kernel_user_max_ns": 6705079,
+      "kernel_user_mean_ns": 22697.702889045304,
+      "phc_read_max_half_width_ns": 2785.5,
+      "phc_max_leave_one_out_residual_ns": 57.66511647366167,
+      "sender_mbps": 4.80037,
+      "capture": {
+        "capture_valid": true,
+        "mode": "hardware",
+        "packets": 125024,
+        "expected_packets": 125024,
+        "pitch_messages": 1000224,
+        "hardware_timestamps": 125024,
+        "software_timestamps": 125024,
+        "kernel_drops": 0,
+        "sequence_errors": 0,
+        "missing_messages": 0,
+        "receive_buffer_actual": 425984,
+        "rx_cpu": 2,
+        "calibration_cpu": 15,
+        "calibration_anchors": 426,
+        "error": ""
+      },
+      "hardware_mapping": {
+        "method": "piecewise-linear midpoint of minimum-width MONOTONIC/PHC/MONOTONIC brackets (25 candidates)",
+        "anchors": 426,
+        "read_half_width_ns": {
+          "samples": 426,
+          "min_ns": 2545.0,
+          "p50_ns": 2645.0,
+          "p99_ns": 2700.0,
+          "p99_9_ns": 2785.5,
+          "max_ns": 2785.5,
+          "mean_ns": 2644.8157276995307
+        },
+        "interpolated_half_width_ns": {
+          "samples": 125024,
+          "min_ns": 2580.129556595776,
+          "p50_ns": 2644.540048015453,
+          "p99_ns": 2690.4508867464556,
+          "p99_9_ns": 2767.059208337547,
+          "max_ns": 2785.334411811839,
+          "mean_ns": 2645.3675141528684
+        },
+        "leave_one_out_residual_abs_ns": {
+          "samples": 424,
+          "min_ns": 0.029321944016260204,
+          "p50_ns": 7.039302881066192,
+          "p99_ns": 45.55389673940738,
+          "p99_9_ns": 57.66511647366167,
+          "max_ns": 57.66511647366167,
+          "mean_ns": 9.094658238202749
+        },
+        "missing_hardware_timestamps": 0,
+        "outside_calibration_interval": 0,
+        "negative_latency_estimates": 0,
+        "negative_beyond_bracket": 0,
+        "note": "Bracket half-widths describe read uncertainty. Interpolation assumes smooth drift; residuals are diagnostic, not a certified error bound."
+      },
+      "realtime_monotonic_mapping": {
+        "valid": true,
+        "uncertainty_half_width_ns": 20.0
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+# Build products, downloaded dependencies and compiler caches.
+/build*/
+target/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+Testing/
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.exe
+
+# Generated workloads and raw experiment artifacts. Curated reports and result
+# tables under docs/experiments/ are versioned, including their JSON/CSV files.
+*.pcap
+*.pcapng
+/simulator/play_files/*.json
+/simulator/play_files/*.partial
+/simulator/play_files/legacy-v1/
+/analysis/*
+!/analysis/README.md
+/.deploy/
+*.log
+
+# Python, editors and operating-system caches.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Credentials, private keys and tool state.
+.env
+.env.*
+.secrets/
+secrets/
+secrets.*
+credentials.json
+credentials.*.json
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+.netrc
+.aws/
+.ssh/
+.gnupg/
+.codex/
+.agents/
+
+# Keep local operating instructions and machine inventories out of this tree.
+AGENTS.md
+/configs/hosts.json
+/docs/local-data.md
+/docs/repository-policy.md

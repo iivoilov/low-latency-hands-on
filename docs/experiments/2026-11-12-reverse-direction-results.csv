@@ -1,0 +1,9 @@
+profile,workload_sha256,implementation,build,valid,samples,p50_ns,p99_ns,p99_9_ns,max_ns,sender_mbps,planned_mbps,rate_within_5pct,kernel_drops,ring_drops,missing_messages_before_stop,sequence_errors,l2_matches,error
+P1,de3b81eb80546381be8ffa84f00c713a9ba921c12d24abad0e23cabbb437babe,C++,receiver-gcc-o3,False,71560,680,6030,178436,312089,8.44876,9.2043608572824,False,0,0,8,1,False,"PITCH sequence mismatch: expected 71744, received 71752"
+P1,de3b81eb80546381be8ffa84f00c713a9ba921c12d24abad0e23cabbb437babe,Rust,rust-o3,False,71432,770,6260,191315,222156,8.42668,9.2043608572824,False,0,0,8,1,False,"PITCH sequence mismatch: expected 71616, received 71624"
+P2,16262090907e2e810649cee36878ea5405927c711e524f58e4c3772028428726,C++,receiver-gcc-o3,True,1000000,670,3820,13170,329200,4.80038,4.80046232309876,True,0,0,0,0,True,
+P2,16262090907e2e810649cee36878ea5405927c711e524f58e4c3772028428726,Rust,rust-o3,True,1000000,740,3820,92513,23232725,4.80036,4.80046232309876,True,0,0,0,0,True,
+P3,98ea41765f036a144f33b0df01e702a1422582373bb10b27d33e3b933dabc2ce,C++,receiver-gcc-o3,False,71440,680,5860,16241,322250,8.43803,9.21116858928466,False,0,0,8,1,False,"PITCH sequence mismatch: expected 71624, received 71632"
+P3,98ea41765f036a144f33b0df01e702a1422582373bb10b27d33e3b933dabc2ce,Rust,rust-o3,False,72832,770,6080,18870,54552,8.43756,9.21116858928466,False,0,0,8,1,False,"PITCH sequence mismatch: expected 73016, received 73024"
+P4,3894e181786370f213d1e0701a1fa79e96ca03f4daf13065a69d83e98c1f9a72,C++,receiver-gcc-o3,False,22424,660,1360,4280,16141,8.54141,13.6001781740642,False,0,0,8,1,False,"PITCH sequence mismatch: expected 22607, received 22615"
+P4,3894e181786370f213d1e0701a1fa79e96ca03f4daf13065a69d83e98c1f9a72,Rust,rust-o3,False,30976,760,1620,5000,23801,8.55244,13.6001781740642,False,0,0,8,1,False,"PITCH sequence mismatch: expected 31159, received 31167"

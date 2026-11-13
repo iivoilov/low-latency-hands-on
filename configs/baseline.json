@@ -1,0 +1,6 @@
+{
+  "rx_cpu": 2,
+  "l2_cpu": 3,
+  "observer_cpu": 15,
+  "rationale": "Measured Ryzen baseline: separate physical cores sharing L3. Override CPU IDs for another machine."
+}

@@ -1,0 +1,76 @@
+{
+  "ryzen": {
+    "cpu": "AMD Ryzen 9 9950X",
+    "sockets": 1,
+    "physical_cores": 16,
+    "logical_cpus": 32,
+    "os": "Debian 13",
+    "kernel": "6.12.116+deb13-amd64",
+    "numa_nodes": 1,
+    "l3_domains": [
+      {
+        "size_mib": 32,
+        "cpus": "0-7,16-23"
+      },
+      {
+        "size_mib": 32,
+        "cpus": "8-15,24-31"
+      }
+    ],
+    "smt_siblings": "i and i+16",
+    "nic_driver": "r8169",
+    "link_mbps": 1000,
+    "mtu": 1500,
+    "cpu_policy": {
+      "driver": "amd-pstate-epp",
+      "governor": "powersave",
+      "energy_preference": "performance"
+    },
+    "toolchains": {
+      "gcc": "14.2.0",
+      "clang": "19.1.7",
+      "rust": "1.99.1",
+      "rust_llvm": "23.1.1"
+    }
+  },
+  "epyc": {
+    "cpu": "2 x AMD EPYC 7742",
+    "sockets": 2,
+    "physical_cores": 128,
+    "logical_cpus": 256,
+    "os": "Debian GNU/Linux",
+    "kernel": "6.1.0-54-amd64",
+    "numa_nodes": 2,
+    "nic": "Intel X550, two ports",
+    "nic_driver": "ixgbe",
+    "link_mbps": 1000,
+    "mtu": 1500,
+    "bond_mode": "active-backup",
+    "nic_numa_node": 0,
+    "measured_rx_l2_cpus": [
+      2,
+      3
+    ],
+    "measured_calibration_or_observer_cpu": 15,
+    "rx_l2_l3": {
+      "size_mib": 16,
+      "cpus": "0-3,128-131"
+    },
+    "cpu_policy": {
+      "driver": "acpi-cpufreq",
+      "governor": "schedutil"
+    },
+    "toolchains": {
+      "gcc": "12.2.0"
+    },
+    "shared_server_workload": true,
+    "nic_pci_id": "8086:1563",
+    "nic_firmware": "0x800007f3, 1.1276.0"
+  },
+  "notes": [
+    "Labels identify hardware configurations, not machine hostnames.",
+    "Existing 1 Gbps links were used; these are not 10 Gbps throughput tests.",
+    "CPU masks constrain placement but do not reserve cores.",
+    "Rust on the EPYC receiver used the release executable built on the Ryzen system."
+  ]
+}
