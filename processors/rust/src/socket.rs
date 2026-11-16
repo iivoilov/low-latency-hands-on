@@ -117,6 +117,9 @@ impl Receiver {
         receiver.buffer = actual;
         Ok(receiver)
     }
+    pub fn raw_fd(&self) -> i32 {
+        self.fd.as_raw_fd()
+    }
     fn set<T>(&self, level: i32, option: i32, value: &T) -> Result<(), Error> {
         // SAFETY: value points to initialized option data of the declared size.
         if unsafe {

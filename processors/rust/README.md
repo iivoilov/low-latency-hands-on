@@ -1,6 +1,6 @@
 # Rust OS-socket processor
 
-Linux Rust implementation of the same two-thread PITCH/L2 processor and timing
+Linux Rust implementation of the same two-thread equities PITCH/L2/L1 processor and timing
 contract as the C++ baseline. It uses `recvmsg`, `SO_RXQ_OVFL`, a bounded
 whole-packet SPSC ring, reader-side gap detection, and a separate bounded SPSC
 gap queue. Loss, continuity, initialization, warmup, sample counts, and JSON fields
@@ -18,6 +18,11 @@ installed Rust toolchain, Cargo.lock, and Release opt-level 3, without LTO or
 `target-cpu=native`. `--cargo` and `--rustc` accept explicit tool paths. Optional
 `--vendor-directory` supports offline builds from checksummed dependency sources;
 vendored artifacts belong under `build/`.
+
+For the human-facing [visual monitor](../../monitoring/README.md), add
+`--continuous --on-loss continue --monitor-port 8765`. Its optional exporter
+borrows the book on the owning thread after processing each datagram; no book
+references are shared with the Python services. Disable monitoring for benchmarks.
 
 Direct loopback usage (start before the player):
 
@@ -37,6 +42,7 @@ Verify native behavior and the same CLI/multicast cases used for C++:
 CARGO_TARGET_DIR="$PWD/build/rust-tests" cargo test --manifest-path processors/rust/Cargo.toml --locked
 python3 processors/cpp/tests/test_cli.py build/rust-o3/processor_rust build/prepare_feed build/play_feed
 python3 processors/cpp/tests/test_cli.py build/rust-o3/processor_rust build/prepare_feed build/play_feed --network
+python3 processors/tests/test_recovery.py build/rust-o3/processor_rust build/prepare_feed build/serve_feed
 ```
 
 The packet/gap queues share one SPSC implementation with cache-separated atomic
@@ -44,7 +50,10 @@ indices and release/acquire ownership transfer. Unique endpoints and lifetime
 guards prevent publishing twice or reusing a slot while a reader holds it. The
 small unsafe boundary covers `UnsafeCell` slot access and Linux FFI; safety
 invariants are documented in code. `Processor::take_gap_consumer` transfers the
-single recovery-consumer endpoint; no recovery worker is included. Concurrent
+single gap-consumer endpoint in the baseline. Optional GRP/spin recovery
+resequences messages before the Processor and services TCP on the existing
+consumer thread. See [recovery usage](../../docs/recovery.md) and the
+[step-by-step Rust ownership explanation](../../docs/rust-recovery.md). Concurrent
 tests cover variable-length packet wraparound and gap FIFO preservation.
 
 Orders use standard `HashMap<u64, Order>` with `RandomState`, reserving capacity
@@ -60,7 +69,11 @@ bucket-length rejection; Rust retains `RandomState`. The initial
 2026-11-13 hardening experiment used a C++ `map` for order IDs; those results are
 historical. The [current native comparison](../../docs/experiments/2026-11-13-siphash.md)
 records the selected C++ baseline and unchanged Rust reference.
-Book allocations remain timed. Sample storage is reserved before reception and
+The [equities PITCH/L1 contract](../../docs/pitch-l1.md) describes full equities
+message coverage, optional quote sides, trade-break rollback, retained trade
+limits and sink callbacks. `rx_to_l1_decision` includes L2, trades and the
+emit/no-update decision. The older L2-only comparisons are historical.
+Book and trade allocations remain timed. Sample storage is reserved before reception and
 bounded at one million entries by default. JSON serialization, sorting and file
 output run after the processing threads stop. `libc` supplies platform ABI;
 `serde_json` and its dependencies are confined to reporting, outside timed updates.

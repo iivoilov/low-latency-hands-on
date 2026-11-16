@@ -63,32 +63,55 @@ print(json.dumps(info))
 '''
 
 
+def latency_measurement(result):
+    metric = 'rx_to_l1_decision' if 'rx_to_l1_decision' in result else 'rx_to_l2'
+    expected = ('recvmsg_return_to_message_l1_decision' if metric == 'rx_to_l1_decision'
+                else 'recvmsg_return_to_message_l2_update')
+    boundary = result.get('timing_boundary', expected)
+    if boundary != expected:
+        raise ValueError(f'Latency field {metric} disagrees with timing boundary {boundary}')
+    return metric, boundary, result[metric]
+
+
 def summarize(records, names):
     summary = []
     for name in names:
-        attempts = [record for record in records if record['build'] == name]
-        runs = [record for record in attempts if record['valid']]
-        rates = [record['sender_mbps'] for record in runs if record['sender_mbps'] is not None]
-        summary.append({
-            'build': name, 'attempts': len(attempts), 'valid_runs': len(runs),
-            'invalid_runs': len(attempts) - len(runs),
-            **{f'median_{key}': statistics.median(r['rx_to_l2'][key] for r in runs) if runs else None
-               for key in ('p50_ns', 'p99_ns', 'p99_9_ns')},
-            'min_p99_9_ns': min(r['rx_to_l2']['p99_9_ns'] for r in runs) if runs else None,
-            'max_p99_9_ns': max(r['rx_to_l2']['p99_9_ns'] for r in runs) if runs else None,
-            'median_sender_mbps': statistics.median(rates) if rates else None,
-            'all_rates_within_5pct': bool(runs) and all(r['rate_within_5pct'] for r in runs),
-        })
+        attempts_for_build = [record for record in records if record['build'] == name]
+        # Historical L2 records and new L1 records must never share a summary.
+        boundaries = list(dict.fromkeys(r.get('timing_boundary', 'recvmsg_return_to_message_l2_update')
+                                        for r in attempts_for_build))
+        for boundary in boundaries or ['recvmsg_return_to_message_l2_update']:
+            attempts = [r for r in attempts_for_build
+                        if r.get('timing_boundary', 'recvmsg_return_to_message_l2_update') == boundary]
+            runs = [record for record in attempts if record['valid']]
+            latencies = [r['latency'] if 'latency' in r else r['rx_to_l2'] for r in runs]
+            rates = [record['sender_mbps'] for record in runs if record['sender_mbps'] is not None]
+            summary.append({
+                'build': name, 'timing_boundary': boundary,
+                'attempts': len(attempts), 'valid_runs': len(runs),
+                'invalid_runs': len(attempts) - len(runs),
+                **{f'median_{key}': statistics.median(l[key] for l in latencies) if runs else None
+                   for key in ('p50_ns', 'p99_ns', 'p99_9_ns')},
+                'min_p99_9_ns': min(l['p99_9_ns'] for l in latencies) if runs else None,
+                'max_p99_9_ns': max(l['p99_9_ns'] for l in latencies) if runs else None,
+                'median_sender_mbps': statistics.median(rates) if rates else None,
+                'all_rates_within_5pct': bool(runs) and all(r['rate_within_5pct'] for r in runs),
+            })
     return summary
 
 
-def affinity_settings(baseline, rx_cpu=None, l2_cpu=None, observer_cpu=None, unpinned=False):
+def affinity_settings(baseline, rx_cpu=None, l2_cpu=None, observer_cpu=None, unpinned=False,
+                      receiver_host=None):
     if unpinned and (rx_cpu is not None or l2_cpu is not None):
         raise ValueError('--unpinned cannot be combined with RX/L2 CPU overrides')
+    matching_host = receiver_host is None or baseline.get('receiver_host', receiver_host) == receiver_host
+    if not matching_host and not unpinned and any(cpu is None for cpu in (rx_cpu, l2_cpu, observer_cpu)):
+        raise ValueError(f"Affinity configuration is for {baseline['receiver_host']}, not {receiver_host}; "
+                         'select a matching --affinity-config, explicitly set all three CPUs, or use --unpinned')
     return {
         'rx_cpu': None if unpinned else (baseline['rx_cpu'] if rx_cpu is None else rx_cpu),
         'l2_cpu': None if unpinned else (baseline['l2_cpu'] if l2_cpu is None else l2_cpu),
-        'observer_cpu': baseline['observer_cpu'] if observer_cpu is None else observer_cpu,
+        'observer_cpu': (baseline['observer_cpu'] if matching_host else None) if observer_cpu is None else observer_cpu,
     }
 
 
@@ -119,7 +142,8 @@ def main():
     args = parser.parse_args()
     baseline = json.loads(args.affinity_config.read_text())
     try:
-        settings = affinity_settings(baseline, args.rx_cpu, args.l2_cpu, args.observer_cpu, args.unpinned)
+        settings = affinity_settings(baseline, args.rx_cpu, args.l2_cpu, args.observer_cpu, args.unpinned,
+                                     receiver_host=args.receiver_host)
     except ValueError as error:
         parser.error(str(error))
     args.rx_cpu, args.l2_cpu, args.observer_cpu = (settings[k] for k in ('rx_cpu', 'l2_cpu', 'observer_cpu'))
@@ -259,10 +283,11 @@ def main():
                 (role['requested_cpu'] is None or
                  role['initial']['allowed_cpus'] == role['last']['allowed_cpus'] == [role['requested_cpu']])
                 for role in affinity['roles'].values()))
+            metric, boundary, latency = latency_measurement(result)
             l2_matches = result['final_book'] == manifest['final_book']
             valid = (receiver.returncode == 0 and player.returncode == 0 and result['benchmark_valid']
                      and result['complete'] and result['book_current'] and l2_matches
-                     and result['rx_to_l2']['samples'] == manifest['updates'] and affinity_verified)
+                     and latency['samples'] == manifest['updates'] and affinity_verified)
             rate_match = re.search(r'actual_mbps=([\d.eE+-]+)', player.stdout)
             sender_mbps = float(rate_match.group(1)) if rate_match else None
             record = {'build': name, 'repeat': repeat, 'valid': valid, 'l2_matches': l2_matches,
@@ -270,7 +295,10 @@ def main():
                       'affinity': affinity,
                       'affinity_verified': affinity_verified,
                       'receiver_exit': receiver.returncode, 'sender_exit': player.returncode,
-                      'rx_to_l2': result['rx_to_l2'], 'queue_wait': result['queue_wait'],
+                      'latency_metric': metric, 'timing_boundary': boundary,
+                      'latency': latency, 'queue_wait': result['queue_wait'],
+                      'l1_decisions': result.get('l1_decisions'),
+                      'l1_updates': result.get('l1_updates'), 'l1_no_updates': result.get('l1_no_updates'),
                       'sender_mbps': sender_mbps,
                       'rate_within_5pct': sender_mbps is not None and abs(sender_mbps / manifest['finite_average_mbps'] - 1) < 0.05,
                       'kernel_drops': result['kernel_dropped_packets'], 'ring_drops': result['ring_dropped_packets'],
@@ -285,7 +313,7 @@ def main():
             records.append(record)
             context['results'] = records
             context_path.write_text(json.dumps(context, indent=2) + '\n')
-            print(json.dumps({key: record[key] for key in ('build', 'repeat', 'valid', 'rx_to_l2', 'sender_mbps')}), flush=True)
+            print(json.dumps({key: record[key] for key in ('build', 'repeat', 'valid', 'timing_boundary', 'latency', 'sender_mbps')}), flush=True)
             if not valid and not args.continue_on_invalid:
                 raise RuntimeError(f'{run_name} failed validation; preserved results under {destination}')
         finally:

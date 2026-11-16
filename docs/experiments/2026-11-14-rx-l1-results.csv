@@ -1,0 +1,21 @@
+receiver_cpu,profile,build,attempts,valid_runs,invalid_runs,median_p50_ns,min_p50_ns,max_p50_ns,median_p99_ns,min_p99_ns,max_p99_ns,median_p99_9_ns,min_p99_9_ns,max_p99_9_ns,median_sender_mbps,all_valid_rates_within_5pct,comparison_scope
+Ryzen 9 9950X,P1,gcc-o2,3,3,0,750,750,760,1920,1900,1920,2540,2500,2540,9.19675,True,selected_baseline
+Ryzen 9 9950X,P1,gcc-o3,3,3,0,730,720,730,1870,1860,1880,2460,2460,2460,9.19597,True,selected_baseline
+Ryzen 9 9950X,P1,clang-o2,3,3,0,660,660,670,1710,1710,1740,2270,2240,2270,9.1957,True,selected_baseline
+Ryzen 9 9950X,P1,clang-o3,3,3,0,660,660,670,1730,1700,1730,2280,2250,2300,9.19614,True,selected_baseline
+Ryzen 9 9950X,P1,rust-o3,3,3,0,800,790,810,1920,1890,1940,2660,2630,2680,9.19447,True,selected_baseline
+Ryzen 9 9950X,P2,gcc-o2,3,3,0,760,760,760,1920,1920,1930,2510,2500,2540,4.79812,True,selected_baseline
+Ryzen 9 9950X,P2,gcc-o3,3,3,0,740,730,740,1880,1870,1890,2480,2480,2500,4.79804,True,selected_baseline
+Ryzen 9 9950X,P2,clang-o2,3,3,0,670,670,680,1720,1720,1740,2300,2270,2330,4.79818,True,selected_baseline
+Ryzen 9 9950X,P2,clang-o3,3,3,0,670,670,670,1730,1730,1740,2310,2300,2310,4.79805,True,selected_baseline
+Ryzen 9 9950X,P2,rust-o3,3,3,0,810,800,810,1920,1910,1920,2450,2430,2520,4.7986,True,selected_baseline
+Ryzen 9 9950X,P3,gcc-o2,3,3,0,750,740,760,1910,1890,1920,2510,2480,2520,9.20161,True,selected_baseline
+Ryzen 9 9950X,P3,gcc-o3,3,3,0,720,720,730,1860,1850,1860,2450,2430,2470,9.20131,True,selected_baseline
+Ryzen 9 9950X,P3,clang-o2,3,3,0,660,660,670,1730,1710,1740,2310,2270,2320,9.20054,True,selected_baseline
+Ryzen 9 9950X,P3,clang-o3,3,3,0,660,660,660,1720,1720,1730,2280,2280,2290,9.20092,True,selected_baseline
+Ryzen 9 9950X,P3,rust-o3,3,3,0,800,800,800,1920,1900,1930,2790,2650,2840,9.20116,True,selected_baseline
+Ryzen 9 9950X,P4,gcc-o2,3,3,0,740,740,740,1910,1900,1910,2520,2500,2520,13.5807,True,selected_baseline
+Ryzen 9 9950X,P4,gcc-o3,3,3,0,720,720,730,1870,1870,1870,2470,2470,2480,13.5724,True,selected_baseline
+Ryzen 9 9950X,P4,clang-o2,3,3,0,660,660,670,1730,1730,1740,2290,2280,2330,13.5794,True,selected_baseline
+Ryzen 9 9950X,P4,clang-o3,3,3,0,660,660,660,1720,1710,1740,2270,2250,2370,13.5756,True,selected_baseline
+Ryzen 9 9950X,P4,rust-o3,3,3,0,800,800,800,1920,1910,1940,2810,2740,2900,13.5787,True,selected_baseline

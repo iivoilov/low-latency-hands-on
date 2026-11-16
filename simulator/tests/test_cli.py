@@ -69,6 +69,7 @@ def reconstruct(packets, manifest):
     sequence = 1
     time_seconds = 34200
     initialization_checked = False
+    references = dict(zip(manifest['symbols'], manifest.get('reference_prices_1e4', [])))
     for packet_index, (timestamp, _, payload) in enumerate(packets):
         length, count, unit, first = struct.unpack_from("<HBBI", payload)
         assert length == len(payload) and length <= 1472
@@ -113,6 +114,10 @@ def reconstruct(packets, manifest):
                 else:
                     assert kind == 0x29 and length == 14
                     del book[order_id]
+            if order_id in book and references:
+                symbol, side, price, _ = book[order_id]
+                distance = references[symbol] - price if side == 'B' else price - references[symbol]
+                assert 100 <= distance <= manifest['levels_per_side'] * 100
         assert offset == len(payload)
         if packet_index + 1 == manifest["initialization_packets"]:
             initialized = Counter((s, side, p) for s, side, p, _ in book.values())
@@ -209,6 +214,29 @@ def offline(directory):
         path, profile = prepare(directory / label, *args)
         check_schedule(payloads(path), profile)
 
+    # Fabricated broad universe: exercise reference prices, >4096 orders,
+    # deterministic output and the independent wire/book checks together.
+    universe = directory / 'universe.csv'
+    rows = [(f'S{i:03}', 500000 + i * 1700) for i in range(503)]
+    universe.write_text('symbol,price_1e4\n' + ''.join(f'{s},{p}\n' for s, p in rows))
+    broad, broad_manifest = prepare(directory / 'broad', '--universe', universe)
+    assert broad_manifest['format_version'] == 3
+    assert broad_manifest['initialization_messages'] == 30180
+    assert broad_manifest['reference_prices_1e4'] == [p for _, p in rows]
+    reconstruct(payloads(broad), broad_manifest)
+    check_schedule(payloads(broad), broad_manifest)
+    duplicate, _ = prepare(directory / 'broad-copy', '--universe', universe)
+    assert broad.read_bytes() == duplicate.read_bytes()
+    run(PLAY, broad, '--no-send')
+    run(PREPARE, '--universe', universe, '--symbols', 'A', success=False)
+    run(PREPARE, '--universe', directory / 'absent.csv', success=False)
+    for invalid in ('', 'symbol,price\nA,100000\n', 'symbol,price_1e4\n',
+                    'symbol,price_1e4\nA,1000\n', 'symbol,price_1e4\nA,-1\n',
+                    'symbol,price_1e4\nA,100000,junk\n',
+                    'symbol,price_1e4\nA,100000\nA,200000\n'):
+        universe.write_text(invalid)
+        run(PREPARE, '--universe', universe, success=False)
+
     fixture = directory / 'fixture.pcap'
     for endian in ('<', '>'):
         for nanos in (False, True):
@@ -235,7 +263,7 @@ def offline(directory):
                     ["--symbols", "A,A"], ["--messages", "0"], ["--messages", "-1"],
                     ["--background-mbps", "nan"], ["--background-mbps", "1junk"],
                     ["--background-mbps", "21"], ["--burst-ms", "100"], ["--burst-every-ms", "0"],
-                    ["--levels", "0"], ["--levels", "100", "--orders-per-level", "100"]):
+                    ["--levels", "0"], ["--levels", "100", "--orders-per-level", "100", "--symbols", "A,B,C,D"]):
         run(PREPARE, '--directory', directory / 'invalid', *options, success=False)
     for options in (['--group', '127.0.0.1'], ['--port', 0], ['--ttl', 256], ['--unknown', 'x']):
         run(PLAY, source, '--no-send', *options, success=False)

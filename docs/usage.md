@@ -45,7 +45,7 @@ build/prepare_feed --messages 1000000 --seed 43 \
 
 The default directory is `simulator/play_files/`. The manifest records counts,
 timing, parameters and expected final L2. Existing files are never overwritten;
-use another `--directory` for a new variant. See [all four recipes](../simulator/play_files/README.md).
+use another `--directory` for a new variant. See [workload recipes](../simulator/play_files/README.md).
 
 Start the receiver in one terminal:
 
@@ -89,8 +89,8 @@ replace them with your own configuration.
 
 ## Timing and loss
 
-Processors measure MONOTONIC time from `recvmsg` return to each completed L2
-update, including ring wait, parsing and earlier updates in the same packet.
+Processors measure MONOTONIC time from `recvmsg` return to each message's L1 emit/no-update
+decision after L2, trade and metadata updates, including ring wait, parsing and earlier updates in the same packet.
 Warmup and protocol controls have no samples. Clock reads and book allocations
 are included. Output and serialization happen afterward. This is elapsed time,
 not CPU time, and does not include earlier driver/kernel delivery.
@@ -101,7 +101,10 @@ books with the manifest, check sample count, and exclude incomplete/lossy runs.
 
 The default stops on loss. `--continuous --on-loss continue` keeps processing,
 records drops/gaps and marks incomplete state; it never invents missing orders.
-There is no TCP resend, GRP filling or snapshot-recovery implementation.
+Optional `--continuous --grp IPv4:PORT` enables bounded GRP recovery;
+`--spin-server IPv4:PORT` adds spin fallback. Recovery and monitoring remain
+disabled in benchmark comparisons. See [recovery](recovery.md) and
+[the monitor](../monitoring/README.md).
 See [the processor contract](../processors/README.md).
 
 ## Separate-host benchmark automation
@@ -173,3 +176,21 @@ Builds, downloaded dependencies, play files, manifests and raw `analysis/` outpu
 are ignored by Git. Runtime reports can contain machine-specific metadata;
 review and anonymize any new results before publication. Only the reviewed
 experiment tables under `docs/experiments/` are part of this source tree.
+
+## Broad universe, recovery and monitoring
+
+`prepare_feed --universe PATH` reads a frozen `symbol,price_1e4` CSV and writes
+version 3 PCAP/manifest pairs. Use the manifest's initialization count, rather
+than the default 180. The measured 503-stock set uses 30,180 initialization adds.
+Keep downloaded vendor inputs and generated sets outside version control.
+See [preparation](../simulator/play_files/README.md#broad-stock-universe).
+
+Both processors also bound retained executions with `--max-trades` (one million
+by default). Exact last-trade rollback retains unbroken execution history.
+Unit Clear repairs orders without inventing missed trades.
+
+The [recovery guide](recovery.md) explains `serve_feed`, fault injection and the
+shared C++/Rust integration suite. The [monitor guide](../monitoring/README.md)
+describes separate Python 3.11+ services, optional dependencies, local Valkey
+and per-subscriber WebSocket delivery. Monitoring adds processing overhead and
+must remain disabled for latency comparisons.

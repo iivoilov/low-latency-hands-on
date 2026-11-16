@@ -1,0 +1,2472 @@
+{
+  "audit_date": "2026-11-15",
+  "measurement_date": "2026-11-14",
+  "receiver_cpu": "Ryzen 9 9950X",
+  "records_checked": 60,
+  "all_masks_and_sampled_cpus_match": true,
+  "all_rx_l1_migration_deltas_zero": true,
+  "method": "Re-read every saved affinity.json; check requested CPU, initial/final effective masks, sampled CPUs, scheduler migration deltas and monitor errors.",
+  "limits": "The external launcher assigns thread affinity. Inherited launcher eligibility is not the resulting worker mask. Affinity does not isolate CPUs or prove absence of preemption/background activity.",
+  "runs": [
+    {
+      "profile": "P1",
+      "build": "rust-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 9709,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 9708,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p1-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "53e8b172cd3d1ddfe5c926cba9a77b550256a766b4eec95278ec2c2bce837496"
+    },
+    {
+      "profile": "P1",
+      "build": "clang-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 9753,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 9752,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p1-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "e8645332eaae06b395d1b65ff029d4311877a9e2a1571e72f40212947e6b47f8"
+    },
+    {
+      "profile": "P1",
+      "build": "gcc-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 9798,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 9797,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p1-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "a1ff71752744884f48f25a143ca6ea2f103c825158b52e7376d54098e13007d4"
+    },
+    {
+      "profile": "P1",
+      "build": "gcc-o2",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 9843,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 9842,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p1-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "9a2ce2964d74e8836d9f9f05fb251691c9663bbf23ba66ad98d036ed07cf2c1d"
+    },
+    {
+      "profile": "P1",
+      "build": "clang-o2",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 9889,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 9888,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p1-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "30745058dc3cc335bd5a48ec31d489ef99bbb5b7bed4ab59e95a2580b4e29b7b"
+    },
+    {
+      "profile": "P3",
+      "build": "clang-o2",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 10243,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 10242,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p3-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "bdb46a0cd0135c4fd5e436d0e6ada5723eb0a3e0abfb5d47d3bdc427a32a4661"
+    },
+    {
+      "profile": "P3",
+      "build": "rust-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 10303,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 10302,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p3-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "ff9f557c4175332d1704da3cb6f3709b0dd2c5b383912611d078a8313d44fc56"
+    },
+    {
+      "profile": "P3",
+      "build": "clang-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 10350,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 10349,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p3-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "b0566707e0f220b1a513e266114762b0d9c9e5dc4587dd9f372333c5a1934eeb"
+    },
+    {
+      "profile": "P3",
+      "build": "gcc-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 10395,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 10394,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p3-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "0ac5bd5773b51751f41997e400fa07ebc0f5759a337b0579f31e708a5db97af0"
+    },
+    {
+      "profile": "P3",
+      "build": "gcc-o2",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 10439,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 10438,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p3-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "d74a3b9561af948ab9fc362923a7dfd0ce2277d4337bc6228c4c71515530f1bb"
+    },
+    {
+      "profile": "P4",
+      "build": "gcc-o2",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 10791,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 10790,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p4-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "08d065555fb1f1e435931a9b0f1bafa53d4890d645a001de0f268da1d45f0e5f"
+    },
+    {
+      "profile": "P4",
+      "build": "gcc-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 10835,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 10834,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 62,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p4-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "ef218f17d5ebafe1b74f4efbda7b0837b83ff8fd46e9b8ba992edc2d45505e3d"
+    },
+    {
+      "profile": "P4",
+      "build": "rust-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 10879,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 10878,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p4-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "f691fcc53eeda4a8bb7e855b65c7ec63e7c0cab428afbc0ec5aa3b09d51b3f6e"
+    },
+    {
+      "profile": "P4",
+      "build": "clang-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 10923,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 10922,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p4-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "50f9b915a7b3140a1b69f75f8826bebd2c8656dd1b1620a4137d82ce7467eecd"
+    },
+    {
+      "profile": "P4",
+      "build": "clang-o2",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 10967,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 10966,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 62,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p4-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "d9dd19062e0d3aa5ad5db01173e1517d68efe37c8d34d82f0ebe4969146a2a0b"
+    },
+    {
+      "profile": "P2",
+      "build": "gcc-o2",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 11666,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 11665,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p2-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "be6a3660b9cd2d9c23bbffdc4388bb5038ba52e6986b998b2d4a45d5710bbde0"
+    },
+    {
+      "profile": "P2",
+      "build": "clang-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 11715,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 11714,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p2-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "3786156e777ef26b9cdb737c3183b64ddc9f5ecefec73896868867092f252c37"
+    },
+    {
+      "profile": "P2",
+      "build": "gcc-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 11761,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 173,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 11760,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 174,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p2-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "622cec51adcc717cd833d81f56def08cb38b7c7a5df5f4976c67828e5a952cf1"
+    },
+    {
+      "profile": "P2",
+      "build": "clang-o2",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 11806,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 11805,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p2-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "45189cf41fd40bb7bb078962ada5577400457a5da8b99b4f72311866aeaaf17b"
+    },
+    {
+      "profile": "P2",
+      "build": "rust-o3",
+      "round": 1,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 11850,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 11849,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r01-p2-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "dbdbfc46bed63c7b02f2bd5f4647f7931f70c94bd451ce242d6945591300ca1d"
+    },
+    {
+      "profile": "P3",
+      "build": "gcc-o2",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 12667,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 12666,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p3-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "d1e3b5294d41d73d162fbda82d27a8cbbf6f9ca6e4512078914b1172b476a296"
+    },
+    {
+      "profile": "P3",
+      "build": "clang-o2",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 12714,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 12713,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p3-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "448dc1f731c4df04cf1216edb057efa773478757c3cd4d9ce124a2665cc4070a"
+    },
+    {
+      "profile": "P3",
+      "build": "clang-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 12759,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 12758,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p3-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "71569209411166811573bfadce357fa3a77912c5e126aa6c5b37a44cbabcd0bc"
+    },
+    {
+      "profile": "P3",
+      "build": "rust-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 12804,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 12803,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p3-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "5da96d86be268702897f070a5db547c03efae14ab547e401528ab06d29196bca"
+    },
+    {
+      "profile": "P3",
+      "build": "gcc-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 12849,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 12848,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p3-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "c7e3058ef2a7d93f098f148dfd80677b9f83d869df2836acdc818796def95eca"
+    },
+    {
+      "profile": "P1",
+      "build": "gcc-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 13203,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 13202,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p1-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "efc474cff37ab4c13326f0381c9187aef39c8c269815765b38a5a2085d48584e"
+    },
+    {
+      "profile": "P1",
+      "build": "clang-o2",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 13247,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 13246,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p1-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "720f4b5c9fdc08ae95e66447db69cfd925e3af43221ae726dd7b057c92783582"
+    },
+    {
+      "profile": "P1",
+      "build": "rust-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 13292,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 91,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 13291,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 91,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p1-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "11af5cd42fc2f5649c32d9765b601c838bebeb7d9e0a7f969fa2325818e955c7"
+    },
+    {
+      "profile": "P1",
+      "build": "clang-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 13337,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 13336,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p1-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "56d4280f3df8c451f482d82b6fe5c8118aac8f8ad484a4c0674f3a3c94682f54"
+    },
+    {
+      "profile": "P1",
+      "build": "gcc-o2",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 13382,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 13381,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p1-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "dd48d7562c2efe54c8227461d2ca7f154a995f54ace4fd6116fd0b0337e8570e"
+    },
+    {
+      "profile": "P2",
+      "build": "clang-o2",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 13750,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 13749,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p2-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "68fa0372d42d2811071082ccc89fda139daf102da1cdf4ce026386314229fdc5"
+    },
+    {
+      "profile": "P2",
+      "build": "rust-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 13795,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 13794,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p2-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "f7f07c7e3fc6f5a86c61aec2d06dcca0abec956f90b41418c0d71faf7e79ab77"
+    },
+    {
+      "profile": "P2",
+      "build": "gcc-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 13844,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 13843,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p2-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "709120169ac7a87f88425c621b2b10a3cbb96d560eae658939cd7f55b7bbff24"
+    },
+    {
+      "profile": "P2",
+      "build": "clang-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 13892,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 13891,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p2-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "ee78d61a1a0be1a19ed62796d866cc9c835762f615b6e370395e00fe59e69fba"
+    },
+    {
+      "profile": "P2",
+      "build": "gcc-o2",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 13936,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 13935,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p2-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "d49d7286e3dd0c043cb7e58ab3710c5db377977e4095466e0b6ba57044118ab0"
+    },
+    {
+      "profile": "P4",
+      "build": "gcc-o2",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 14290,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 63,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 14289,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 63,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p4-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "c5ced3328505bcf1954a69237b4d018446c40d627b25ac0a6230e075a8bf9e72"
+    },
+    {
+      "profile": "P4",
+      "build": "gcc-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 14334,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 14333,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p4-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "38941c8a4dc96c24bbbba049b2cb125492067b786ecf474557b8f9b7b343db15"
+    },
+    {
+      "profile": "P4",
+      "build": "clang-o2",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 14378,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 14377,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p4-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "c36e3ca3e79ef03e58dadbc9de0abd4f192324eac043b462eae7e2caba2111cb"
+    },
+    {
+      "profile": "P4",
+      "build": "rust-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 14422,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 14421,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p4-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "f136b68286f78c335d86c4bbf38b6342cfd9ce042d90c4ea043a57af2efe7652"
+    },
+    {
+      "profile": "P4",
+      "build": "clang-o3",
+      "round": 2,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 14481,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 14480,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r02-p4-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "52917aa83f4243bac146459b3fcba2977d41271be7635b72e2ec4946c4993ce8"
+    },
+    {
+      "profile": "P1",
+      "build": "rust-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 14935,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 14934,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p1-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "d1d9bb2f63c293a2ed527e7396997cee77316687433ce49085bad18ada821b07"
+    },
+    {
+      "profile": "P1",
+      "build": "gcc-o2",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 14980,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 14979,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p1-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "58444171615a5b90455c2f28462e48fd27afbf9a3cacd21040339c7072623ed6"
+    },
+    {
+      "profile": "P1",
+      "build": "clang-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 15040,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 15039,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p1-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "5adf80e1d9eb330560dfd311381c07f72ab1886644e6bdefd3960be04f831677"
+    },
+    {
+      "profile": "P1",
+      "build": "gcc-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 15086,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 15085,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p1-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "8d7a7e52d7e7ce78900fe1d8f0e17d4927cc4c5977238ed90fa8026e3c426391"
+    },
+    {
+      "profile": "P1",
+      "build": "clang-o2",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 15131,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 15130,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p1-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "8c1d28e54193c5f1e80e94d544b15ec0d61fd7b5558d8f0edbcf1afca8538d3e"
+    },
+    {
+      "profile": "P3",
+      "build": "gcc-o2",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 15588,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 15587,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p3-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "6b86db5de6a0550c861033ecec7b483f9a818329182e2f0e39a02f98250ca646"
+    },
+    {
+      "profile": "P3",
+      "build": "rust-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 15632,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 15631,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p3-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "a47aa67339b33a8cc27d0ccb80f5f982f0a042106fa1fbd6f8f1f84c6c83ed1d"
+    },
+    {
+      "profile": "P3",
+      "build": "clang-o2",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 15676,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 91,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 15675,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 91,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p3-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "90926780e057fe7799bfba763563ae34f96571922d63f0daed7d78ad4f449e27"
+    },
+    {
+      "profile": "P3",
+      "build": "gcc-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 15723,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 15722,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p3-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "9e2a12619dfc9ab868598edc8752ab5a919a05b44c771537b527eb817c73c0c7"
+    },
+    {
+      "profile": "P3",
+      "build": "clang-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 15783,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 15782,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 90,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p3-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "2d6840695152220e14ed732a6b8bcc43b33f20df7b4f11d095535d49bef2bf86"
+    },
+    {
+      "profile": "P4",
+      "build": "clang-o2",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 16238,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 16237,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p4-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "6449d85dd41892e1fc4f05f2ea15178ebd68de489ee540ebffa94adc06adfb1a"
+    },
+    {
+      "profile": "P4",
+      "build": "clang-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 16282,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 16281,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 62,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p4-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "943a12052fef43100cfadf092adecdbc5a62be83d81f9bf85a96b6f64989e689"
+    },
+    {
+      "profile": "P4",
+      "build": "rust-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 16327,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 16326,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p4-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "e5c7cde530fb8431a69ed93a6379a013c1904af4a35572010af6d6a9c0a2a01d"
+    },
+    {
+      "profile": "P4",
+      "build": "gcc-o2",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 16371,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 16370,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p4-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "fd102ae0fa1aab799d55cc21cf78eb4aa251ebdafc840e82f43bf885bb24cd9d"
+    },
+    {
+      "profile": "P4",
+      "build": "gcc-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 16416,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 16415,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 61,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p4-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "317bd7da806bc175b4065f74241ba361555a4704d3bffee4b05ee33a0c4f217d"
+    },
+    {
+      "profile": "P2",
+      "build": "clang-o2",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 16769,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 173,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 16768,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 174,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p2-001/clang-o2-r01/affinity.json",
+      "metadata_sha256": "d15a34f71340ae0fadc24025aa61c775eaa1614cdef8ef11685ec56c02614eef"
+    },
+    {
+      "profile": "P2",
+      "build": "gcc-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 16829,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 16828,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p2-001/gcc-o3-r01/affinity.json",
+      "metadata_sha256": "5514648075f587aec9be7c6c600643a0aa699e3e28d1ac7f971008d6a3c7afd1"
+    },
+    {
+      "profile": "P2",
+      "build": "clang-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 16873,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 16872,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p2-001/clang-o3-r01/affinity.json",
+      "metadata_sha256": "7016da6862d6d0ded6b3481016fadac2c904285b4170960ee1ae01a4878b45f0"
+    },
+    {
+      "profile": "P2",
+      "build": "gcc-o2",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 16917,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 16916,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p2-001/gcc-o2-r01/affinity.json",
+      "metadata_sha256": "eef475ab53eb0b20bdfb09f0fd719c465a1fe6d9766adb1b22250dd191263c1f"
+    },
+    {
+      "profile": "P2",
+      "build": "rust-o3",
+      "round": 3,
+      "observer_cpu": 15,
+      "startup_cpu": 3,
+      "roles": {
+        "rx": {
+          "tid": 16966,
+          "requested_cpu": 2,
+          "initial_mask": [
+            2
+          ],
+          "last_mask": [
+            2
+          ],
+          "sampled_cpus": [
+            2
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        },
+        "l2": {
+          "tid": 16965,
+          "requested_cpu": 3,
+          "initial_mask": [
+            3
+          ],
+          "last_mask": [
+            3
+          ],
+          "sampled_cpus": [
+            3
+          ],
+          "observations": 172,
+          "migration_delta": 0
+        }
+      },
+      "metadata_path": "analysis/rx-l1-2026-11-14/rx-l1-20261114-ryzen-r03-p2-001/rust-o3-r01/affinity.json",
+      "metadata_sha256": "d34a41a8089988a9d6995e05acab61ac7009682b4c71b22a05361f8ebc7d5820"
+    }
+  ]
+}

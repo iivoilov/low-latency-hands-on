@@ -1,0 +1,1397 @@
+{
+  "experiment_date": "2026-11-14",
+  "measurement": "median of batch-average decode ns/message; no network/L2/L1",
+  "cpu_model": "13th Gen Intel(R) Core(TM) i9-13900K",
+  "os": "WSL2, Linux 6.6.87.2",
+  "compiler": "GCC 12.2.0",
+  "flags": "-O3 -DNDEBUG -Wall -Wextra -Wpedantic -Wconversion -std=c++20; no LTO or march=native",
+  "decoder_cpu": 3,
+  "observer_cpu": 15,
+  "smt_siblings": "2-3",
+  "source_sha256": {
+    "processors/cpp/src/pitch_message.cpp": "29d5c2c3f87427774a691851a13e16c557021f3094e28f9d8e03a74426cf8d4e",
+    "processors/cpp/src/pitch_message_packed.cpp": "11e9a35d247c9c8dfb149a65b45051b4b563d41ee64036e7d7d738b846296551",
+    "processors/cpp/include/low_latency/pitch_message.hpp": "9dd023518635f1718542da1a3736d392899b8171340bae400d914821d4f59122",
+    "benchmark/pitch_decode.cpp": "2ab8bf2c2cc0c92a089624ef1ca32c39f29ec4804d0418894b4d18af93cb8bda",
+    "CMakeLists.txt": "38badeb27c7699dc7934526c337e9d11617117787373e06f25b44d29485eb481"
+  },
+  "sessions": [
+    {
+      "number": 1,
+      "status": "initial packed helper; taskset requested, no in-process affinity verification",
+      "binary_sha256": "3f3d95825589a7161c6edf9e01eb055281a3178a57623234caba20824438b202",
+      "source_sha256": {
+        "processors/cpp/src/pitch_message.cpp": "29d5c2c3f87427774a691851a13e16c557021f3094e28f9d8e03a74426cf8d4e",
+        "processors/cpp/src/pitch_message_packed.cpp": "58e41fa9091a559050993900cfec5074c24b7af03a2e437e5a3ce15e46f0b39f",
+        "processors/cpp/include/low_latency/pitch_message.hpp": "9dd023518635f1718542da1a3736d392899b8171340bae400d914821d4f59122",
+        "benchmark/pitch_decode.cpp": "37eea40621ce3d6c87ce78c0fca38319494c5b2630b8369769d8903497ddafae",
+        "CMakeLists.txt": "38badeb27c7699dc7934526c337e9d11617117787373e06f25b44d29485eb481"
+      },
+      "workloads": [
+        {
+          "name": "all-layouts",
+          "compiler": "12.2.0",
+          "build_type": "Release",
+          "clock": "CLOCK_MONOTONIC",
+          "measurement": "batch_average_decode_ns_per_message",
+          "input": "processors/tests/equities_messages.tsv",
+          "corpus_messages": 23,
+          "corpus_bytes": 543,
+          "passes_per_run": 217392,
+          "messages_per_run": 5000016,
+          "warmup_messages_per_decoder": 100004,
+          "warmup_checksum": 24650368409601720,
+          "order_seed": 20261114,
+          "message_type_counts": {
+            "32": 2,
+            "33": 1,
+            "34": 1,
+            "35": 1,
+            "36": 1,
+            "37": 1,
+            "38": 1,
+            "39": 1,
+            "40": 1,
+            "41": 1,
+            "42": 1,
+            "43": 1,
+            "44": 1,
+            "45": 1,
+            "47": 1,
+            "48": 1,
+            "49": 1,
+            "149": 1,
+            "150": 1,
+            "151": 1,
+            "152": 1,
+            "177": 1
+          },
+          "runs": [
+            {
+              "repeat": 1,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 33449574,
+              "ns_per_message": 6.68989339234,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 1,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 34478002,
+              "ns_per_message": 6.89557833415,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 2,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 34344121,
+              "ns_per_message": 6.86880221983,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 2,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 32741497,
+              "ns_per_message": 6.54827844551,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 3,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 34266177,
+              "ns_per_message": 6.85321346972,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 3,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 32715722,
+              "ns_per_message": 6.543123462,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 4,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 33992687,
+              "ns_per_message": 6.79851564475,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 4,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 33226962,
+              "ns_per_message": 6.64537113481,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 5,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 32815407,
+              "ns_per_message": 6.56306039821,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 5,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 34200157,
+              "ns_per_message": 6.84000951197,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 6,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 33860340,
+              "ns_per_message": 6.77204632945,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 6,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 32806509,
+              "ns_per_message": 6.5612808039,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 7,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 32818458,
+              "ns_per_message": 6.56367059625,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 7,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 34148708,
+              "ns_per_message": 6.8297197449,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 8,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 34642623,
+              "ns_per_message": 6.92850242879,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 8,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 32593776,
+              "ns_per_message": 6.51873434005,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 9,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 33966048,
+              "ns_per_message": 6.7931878618,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 9,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 32440727,
+              "ns_per_message": 6.488124638,
+              "checksum": 1232473065616406880
+            }
+          ],
+          "summary": [
+            {
+              "decoder": "original",
+              "runs": 9,
+              "median_ns_per_message": 6.5612808039,
+              "min_ns_per_message": 6.488124638,
+              "max_ns_per_message": 6.68989339234
+            },
+            {
+              "decoder": "packed",
+              "runs": 9,
+              "median_ns_per_message": 6.84000951197,
+              "min_ns_per_message": 6.77204632945,
+              "max_ns_per_message": 6.92850242879
+            }
+          ],
+          "median_paired_speedup": 0.959510419791,
+          "input_sha256": "67c24cd68350312db2831c06680114836a8d5faa228c7e42086b29992d6484ec",
+          "exit_code": 0
+        },
+        {
+          "name": "million-update-pcap",
+          "compiler": "12.2.0",
+          "build_type": "Release",
+          "clock": "CLOCK_MONOTONIC",
+          "measurement": "batch_average_decode_ns_per_message",
+          "input": "simulator/play_files/pitch-v2-1m-base8m-peak20m-b10ms-e100ms_sym3_seed43.pcap",
+          "corpus_messages": 1000204,
+          "corpus_bytes": 24667328,
+          "passes_per_run": 5,
+          "messages_per_run": 5001020,
+          "warmup_messages_per_decoder": 1000204,
+          "warmup_checksum": 2734526293656412091,
+          "order_seed": 20261114,
+          "message_type_counts": {
+            "32": 23,
+            "33": 186474,
+            "35": 246427,
+            "37": 201762,
+            "39": 243924,
+            "41": 121593,
+            "151": 1
+          },
+          "runs": [
+            {
+              "repeat": 1,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 54679321,
+              "ns_per_message": 10.9336337387,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 1,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 48008269,
+              "ns_per_message": 9.59969546213,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 2,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 48595303,
+              "ns_per_message": 9.71707831602,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 2,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 53789343,
+              "ns_per_message": 10.7556744424,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 3,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 46023262,
+              "ns_per_message": 9.20277503389,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 3,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 53064043,
+              "ns_per_message": 10.6106440286,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 4,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 49833864,
+              "ns_per_message": 9.96473999304,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 4,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 56167612,
+              "ns_per_message": 11.2312312288,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 5,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 53019535,
+              "ns_per_message": 10.6017442442,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 5,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 45662362,
+              "ns_per_message": 9.13060975561,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 6,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 45927964,
+              "ns_per_message": 9.18371932126,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 6,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 57851544,
+              "ns_per_message": 11.5679489384,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 7,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 53979609,
+              "ns_per_message": 10.7937198811,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 7,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 45668246,
+              "ns_per_message": 9.13178631559,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 8,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 45264016,
+              "ns_per_message": 9.05095680481,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 8,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 53351235,
+              "ns_per_message": 10.6680707136,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 9,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 45010677,
+              "ns_per_message": 9.00029933893,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 9,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 53364846,
+              "ns_per_message": 10.6707923584,
+              "checksum": 13672631468282060455
+            }
+          ],
+          "summary": [
+            {
+              "decoder": "original",
+              "runs": 9,
+              "median_ns_per_message": 10.7556744424,
+              "min_ns_per_message": 10.6017442442,
+              "max_ns_per_message": 11.5679489384
+            },
+            {
+              "decoder": "packed",
+              "runs": 9,
+              "median_ns_per_message": 9.18371932126,
+              "min_ns_per_message": 9.00029933893,
+              "max_ns_per_message": 9.96473999304
+            }
+          ],
+          "median_paired_speedup": 1.16112116583,
+          "input_sha256": "de3b81eb80546381be8ffa84f00c713a9ba921c12d24abad0e23cabbb437babe",
+          "exit_code": 0
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "status": "initial packed helper; verified in-process affinity and per-run CPUs",
+      "binary_sha256": "21c88cd7b0232e8f1b567e01b9fabe90de57d098a3e59fd67385d2a55f2aae8a",
+      "source_sha256": {
+        "processors/cpp/src/pitch_message.cpp": "29d5c2c3f87427774a691851a13e16c557021f3094e28f9d8e03a74426cf8d4e",
+        "processors/cpp/src/pitch_message_packed.cpp": "58e41fa9091a559050993900cfec5074c24b7af03a2e437e5a3ce15e46f0b39f",
+        "processors/cpp/include/low_latency/pitch_message.hpp": "9dd023518635f1718542da1a3736d392899b8171340bae400d914821d4f59122",
+        "benchmark/pitch_decode.cpp": "2ab8bf2c2cc0c92a089624ef1ca32c39f29ec4804d0418894b4d18af93cb8bda",
+        "CMakeLists.txt": "38badeb27c7699dc7934526c337e9d11617117787373e06f25b44d29485eb481"
+      },
+      "workloads": [
+        {
+          "name": "all-layouts",
+          "compiler": "12.2.0",
+          "build_type": "Release",
+          "clock": "CLOCK_MONOTONIC",
+          "measurement": "batch_average_decode_ns_per_message",
+          "input": "processors/tests/equities_messages.tsv",
+          "corpus_messages": 23,
+          "corpus_bytes": 543,
+          "passes_per_run": 217392,
+          "messages_per_run": 5000016,
+          "warmup_messages_per_decoder": 100004,
+          "warmup_checksum": 24650368409601720,
+          "order_seed": 20261114,
+          "affinity_cpus": [
+            3
+          ],
+          "message_type_counts": {
+            "32": 2,
+            "33": 1,
+            "34": 1,
+            "35": 1,
+            "36": 1,
+            "37": 1,
+            "38": 1,
+            "39": 1,
+            "40": 1,
+            "41": 1,
+            "42": 1,
+            "43": 1,
+            "44": 1,
+            "45": 1,
+            "47": 1,
+            "48": 1,
+            "49": 1,
+            "149": 1,
+            "150": 1,
+            "151": 1,
+            "152": 1,
+            "177": 1
+          },
+          "runs": [
+            {
+              "repeat": 1,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 32684080,
+              "ns_per_message": 6.53679508226,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 1,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 35017335,
+              "ns_per_message": 7.00344458898,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 2,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 34988168,
+              "ns_per_message": 6.99761120764,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 2,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 33117257,
+              "ns_per_message": 6.62343020502,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 3,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 39036011,
+              "ns_per_message": 7.80717721703,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 3,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 34406590,
+              "ns_per_message": 6.88129597985,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 4,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 36053925,
+              "ns_per_message": 7.21076192556,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 4,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 33260257,
+              "ns_per_message": 6.6520301135,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 5,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 32837978,
+              "ns_per_message": 6.56757458376,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 5,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 34718447,
+              "ns_per_message": 6.94366718027,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 6,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 34352588,
+              "ns_per_message": 6.87049561441,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 6,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 32870295,
+              "ns_per_message": 6.57403796308,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 7,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 32705602,
+              "ns_per_message": 6.54109946848,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 7,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 34606462,
+              "ns_per_message": 6.92127025194,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 8,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 35118246,
+              "ns_per_message": 7.02362672439,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 8,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 33615478,
+              "ns_per_message": 6.72307408616,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 9,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 35488946,
+              "ns_per_message": 7.09776648715,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 9,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 33026482,
+              "ns_per_message": 6.60527526312,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            }
+          ],
+          "summary": [
+            {
+              "decoder": "original",
+              "runs": 9,
+              "median_ns_per_message": 6.60527526312,
+              "min_ns_per_message": 6.53679508226,
+              "max_ns_per_message": 6.88129597985
+            },
+            {
+              "decoder": "packed",
+              "runs": 9,
+              "median_ns_per_message": 7.00344458898,
+              "min_ns_per_message": 6.87049561441,
+              "max_ns_per_message": 7.80717721703
+            }
+          ],
+          "median_paired_speedup": 0.945072108209,
+          "input_sha256": "67c24cd68350312db2831c06680114836a8d5faa228c7e42086b29992d6484ec",
+          "exit_code": 0
+        },
+        {
+          "name": "million-update-pcap",
+          "compiler": "12.2.0",
+          "build_type": "Release",
+          "clock": "CLOCK_MONOTONIC",
+          "measurement": "batch_average_decode_ns_per_message",
+          "input": "simulator/play_files/pitch-v2-1m-base8m-peak20m-b10ms-e100ms_sym3_seed43.pcap",
+          "corpus_messages": 1000204,
+          "corpus_bytes": 24667328,
+          "passes_per_run": 5,
+          "messages_per_run": 5001020,
+          "warmup_messages_per_decoder": 1000204,
+          "warmup_checksum": 2734526293656412091,
+          "order_seed": 20261114,
+          "affinity_cpus": [
+            3
+          ],
+          "message_type_counts": {
+            "32": 23,
+            "33": 186474,
+            "35": 246427,
+            "37": 201762,
+            "39": 243924,
+            "41": 121593,
+            "151": 1
+          },
+          "runs": [
+            {
+              "repeat": 1,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 55754368,
+              "ns_per_message": 11.1485992857,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 1,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 44480988,
+              "ns_per_message": 8.89438314584,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 2,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 44889787,
+              "ns_per_message": 8.97612627024,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 2,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 56183122,
+              "ns_per_message": 11.2343325962,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 3,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 44587291,
+              "ns_per_message": 8.91563940956,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 3,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 56061069,
+              "ns_per_message": 11.2099269749,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 4,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 45378450,
+              "ns_per_message": 9.07383893686,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 4,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 55789796,
+              "ns_per_message": 11.1556834406,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 5,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 55647892,
+              "ns_per_message": 11.1273084291,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 5,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 46093661,
+              "ns_per_message": 9.2168519622,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 6,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 46277105,
+              "ns_per_message": 9.25353327921,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 6,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 55862998,
+              "ns_per_message": 11.1703208545,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 7,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 56496609,
+              "ns_per_message": 11.2970172085,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 7,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 44759299,
+              "ns_per_message": 8.95003399307,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 8,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 45351908,
+              "ns_per_message": 9.06853161955,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 8,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 56032661,
+              "ns_per_message": 11.2042465337,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 9,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 45399587,
+              "ns_per_message": 9.07806547464,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 9,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 56973863,
+              "ns_per_message": 11.3924485405,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            }
+          ],
+          "summary": [
+            {
+              "decoder": "original",
+              "runs": 9,
+              "median_ns_per_message": 11.2042465337,
+              "min_ns_per_message": 11.1273084291,
+              "max_ns_per_message": 11.3924485405
+            },
+            {
+              "decoder": "packed",
+              "runs": 9,
+              "median_ns_per_message": 9.06853161955,
+              "min_ns_per_message": 8.89438314584,
+              "max_ns_per_message": 9.25353327921
+            }
+          ],
+          "median_paired_speedup": 1.25157916209,
+          "input_sha256": "de3b81eb80546381be8ffa84f00c713a9ba921c12d24abad0e23cabbb437babe",
+          "exit_code": 0
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "status": "final compile-time Add/Trade helper; verified in-process affinity and per-run CPUs",
+      "binary_sha256": "33a42ec9db57deb19e35ab75e2be5d5b3b225d262e8c1e6304448066ea756bc5",
+      "source_sha256": {
+        "processors/cpp/src/pitch_message.cpp": "29d5c2c3f87427774a691851a13e16c557021f3094e28f9d8e03a74426cf8d4e",
+        "processors/cpp/src/pitch_message_packed.cpp": "11e9a35d247c9c8dfb149a65b45051b4b563d41ee64036e7d7d738b846296551",
+        "processors/cpp/include/low_latency/pitch_message.hpp": "9dd023518635f1718542da1a3736d392899b8171340bae400d914821d4f59122",
+        "benchmark/pitch_decode.cpp": "2ab8bf2c2cc0c92a089624ef1ca32c39f29ec4804d0418894b4d18af93cb8bda",
+        "CMakeLists.txt": "38badeb27c7699dc7934526c337e9d11617117787373e06f25b44d29485eb481"
+      },
+      "workloads": [
+        {
+          "name": "all-layouts",
+          "compiler": "12.2.0",
+          "build_type": "Release",
+          "clock": "CLOCK_MONOTONIC",
+          "measurement": "batch_average_decode_ns_per_message",
+          "input": "processors/tests/equities_messages.tsv",
+          "corpus_messages": 23,
+          "corpus_bytes": 543,
+          "passes_per_run": 217392,
+          "messages_per_run": 5000016,
+          "warmup_messages_per_decoder": 100004,
+          "warmup_checksum": 24650368409601720,
+          "order_seed": 20261114,
+          "affinity_cpus": [
+            3
+          ],
+          "message_type_counts": {
+            "32": 2,
+            "33": 1,
+            "34": 1,
+            "35": 1,
+            "36": 1,
+            "37": 1,
+            "38": 1,
+            "39": 1,
+            "40": 1,
+            "41": 1,
+            "42": 1,
+            "43": 1,
+            "44": 1,
+            "45": 1,
+            "47": 1,
+            "48": 1,
+            "49": 1,
+            "149": 1,
+            "150": 1,
+            "151": 1,
+            "152": 1,
+            "177": 1
+          },
+          "runs": [
+            {
+              "repeat": 1,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 32890876,
+              "ns_per_message": 6.57815414991,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 1,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 35094965,
+              "ns_per_message": 7.01897053929,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 2,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 34976619,
+              "ns_per_message": 6.99530141504,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 2,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 31907085,
+              "ns_per_message": 6.38139657953,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 3,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 35408098,
+              "ns_per_message": 7.08159693889,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 3,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 32869235,
+              "ns_per_message": 6.57382596376,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 4,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 35412751,
+              "ns_per_message": 7.08252753591,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 4,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 32991591,
+              "ns_per_message": 6.59829708545,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 5,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 32775981,
+              "ns_per_message": 6.55517522344,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 5,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 35022394,
+              "ns_per_message": 7.00445638574,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 6,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 35119288,
+              "ns_per_message": 7.02383512373,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 6,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 33858086,
+              "ns_per_message": 6.77159553089,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 7,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 47490948,
+              "ns_per_message": 9.49815920589,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 7,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 35346300,
+              "ns_per_message": 7.06923737844,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 8,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 35403664,
+              "ns_per_message": 7.08071014173,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 8,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 33394973,
+              "ns_per_message": 6.67897322729,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 9,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 36178237,
+              "ns_per_message": 7.235624246,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            },
+            {
+              "repeat": 9,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 33134812,
+              "ns_per_message": 6.62694119379,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 1232473065616406880
+            }
+          ],
+          "summary": [
+            {
+              "decoder": "original",
+              "runs": 9,
+              "median_ns_per_message": 6.59829708545,
+              "min_ns_per_message": 6.38139657953,
+              "max_ns_per_message": 9.49815920589
+            },
+            {
+              "decoder": "packed",
+              "runs": 9,
+              "median_ns_per_message": 7.06923737844,
+              "min_ns_per_message": 6.99530141504,
+              "max_ns_per_message": 7.235624246
+            }
+          ],
+          "median_paired_speedup": 0.935857811433,
+          "input_sha256": "67c24cd68350312db2831c06680114836a8d5faa228c7e42086b29992d6484ec",
+          "exit_code": 0
+        },
+        {
+          "name": "million-update-pcap",
+          "compiler": "12.2.0",
+          "build_type": "Release",
+          "clock": "CLOCK_MONOTONIC",
+          "measurement": "batch_average_decode_ns_per_message",
+          "input": "simulator/play_files/pitch-v2-1m-base8m-peak20m-b10ms-e100ms_sym3_seed43.pcap",
+          "corpus_messages": 1000204,
+          "corpus_bytes": 24667328,
+          "passes_per_run": 5,
+          "messages_per_run": 5001020,
+          "warmup_messages_per_decoder": 1000204,
+          "warmup_checksum": 2734526293656412091,
+          "order_seed": 20261114,
+          "affinity_cpus": [
+            3
+          ],
+          "message_type_counts": {
+            "32": 23,
+            "33": 186474,
+            "35": 246427,
+            "37": 201762,
+            "39": 243924,
+            "41": 121593,
+            "151": 1
+          },
+          "runs": [
+            {
+              "repeat": 1,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 55745637,
+              "ns_per_message": 11.1468534419,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 1,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 46948965,
+              "ns_per_message": 9.38787787291,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 2,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 43929098,
+              "ns_per_message": 8.78402765836,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 2,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 54923547,
+              "ns_per_message": 10.9824689763,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 3,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 45218838,
+              "ns_per_message": 9.0419230477,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 3,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 55599213,
+              "ns_per_message": 11.1175746148,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 4,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 44503810,
+              "ns_per_message": 8.89894661489,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 4,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 55078760,
+              "ns_per_message": 11.0135052449,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 5,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 55232041,
+              "ns_per_message": 11.0441551923,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 5,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 46522198,
+              "ns_per_message": 9.30254188146,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 6,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 43945658,
+              "ns_per_message": 8.78733898285,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 6,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 56020074,
+              "ns_per_message": 11.2017296472,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 7,
+              "position": 1,
+              "decoder": "original",
+              "elapsed_ns": 55962711,
+              "ns_per_message": 11.1902593871,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 7,
+              "position": 2,
+              "decoder": "packed",
+              "elapsed_ns": 45575104,
+              "ns_per_message": 9.11316171501,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 8,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 47991644,
+              "ns_per_message": 9.59637114029,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 8,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 56587727,
+              "ns_per_message": 11.3152370916,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 9,
+              "position": 1,
+              "decoder": "packed",
+              "elapsed_ns": 43692105,
+              "ns_per_message": 8.7366387257,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            },
+            {
+              "repeat": 9,
+              "position": 2,
+              "decoder": "original",
+              "elapsed_ns": 55012293,
+              "ns_per_message": 11.0002145562,
+              "start_cpu": 3,
+              "end_cpu": 3,
+              "checksum": 13672631468282060455
+            }
+          ],
+          "summary": [
+            {
+              "decoder": "original",
+              "runs": 9,
+              "median_ns_per_message": 11.1175746148,
+              "min_ns_per_message": 10.9824689763,
+              "max_ns_per_message": 11.3152370916
+            },
+            {
+              "decoder": "packed",
+              "runs": 9,
+              "median_ns_per_message": 9.0419230477,
+              "min_ns_per_message": 8.7366387257,
+              "max_ns_per_message": 9.59637114029
+            }
+          ],
+          "median_paired_speedup": 1.22955864102,
+          "input_sha256": "de3b81eb80546381be8ffa84f00c713a9ba921c12d24abad0e23cabbb437babe",
+          "exit_code": 0
+        }
+      ]
+    }
+  ]
+}

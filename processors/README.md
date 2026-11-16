@@ -1,13 +1,29 @@
 # C++ OS-socket baseline
 
 `processor_cpp` is the first processor. It receives PITCH multicast through the
-normal OS network stack and maintains an internal L2 order book. The matching
+normal OS network stack, maintains L2 and generates L1 bid/ask/last updates.
+Both languages cover every U.S. equities multicast PITCH message; see the
+[message coverage, L1 contract and limits](../docs/pitch-l1.md). Options-specific
+messages remain outside this implementation. The matching
 [Rust OS-socket implementation](rust/README.md) is also available, with the same
-CLI/report schema and shared multicast tests. DPDK is planned; current
-measurements use the normal Linux network stack. See
-[remote benchmarks](../benchmark/README.md).
+CLI/report schema and shared multicast tests. A DPDK implementation is planned;
+no kernel-bypass processor result is available. See [remote benchmarks](../benchmark/README.md).
+
+## Recovery
+
+Optional Cboe GRP/spin recovery is enabled with `--continuous --grp IPv4:PORT`;
+`--spin-server IPv4:PORT` adds snapshot fallback. Both languages use the same
+bounded message buffer and ordered catch-up contract. The default benchmark and
+lossy continuation modes remain available. See [recovery commands and design](../docs/recovery.md)
+and [Rust implementation notes](../docs/rust-recovery.md).
 
 ## Run
+
+For live visualization, both processors accept
+`--continuous --on-loss continue --monitor-port 8765`. This opt-in export sends
+packet-final L1/L2 snapshots to a local throttler; it adds serialization and
+UDP work and reports `monitoring_enabled`. Keep it disabled for latency
+comparisons. See the [monitor setup and delivery contract](../monitoring/README.md).
 
 Build through the root CMake project. Start the receiver, then the player in
 another terminal:
@@ -22,7 +38,7 @@ build/play_feed simulator/play_files/pitch-v2-1m-base8m-peak20m-b10ms-e100ms_sym
   --interface 127.0.0.1 --spin
 ```
 
-For a separate receiving machine, use its local NIC IPv4 address with `--interface`.
+For `ryzen`, use its receiving NIC's local IPv4 address with `--interface`.
 The interface must be a concrete unicast IPv4 address. Both receivers bind to
 the configured multicast group and join it on that interface; unrelated unicast
 and other multicast destinations cannot enter the PITCH parser. Sender IP
@@ -48,7 +64,7 @@ that independent reference. Latency storage is reserved before reception.
 OS socket -> RX thread -> bounded whole-packet SPSC ring -> L2 thread
                 |                  |                         |
             RX timestamp      length, bytes,              decode, orders,
-                              RX time, loss count         price aggregation
+                              RX time, loss count         L2, trades, L1 decision
 ```
 
 The main thread consumes the ring and owns the book exclusively. One RX thread
@@ -60,6 +76,22 @@ ownership without a mutex. The consumer releases a slot only after processing
 all of its messages. A full ring never overwrites unread data: the RX thread
 receives into scratch space and drops the new whole datagram if space is still
 unavailable. Ring high-watermark and drop counters are reported.
+
+Each endpoint caches the other endpoint's position, refreshing it on apparent
+full (producer) or empty (consumer). Increasing unsigned counters distinguish
+full (`write - read == capacity`) from empty (`write == read`); masking selects
+the physical slot. Release/acquire handoffs remain unchanged. Publication still
+reads the shared consumer position for the existing depth/high-watermark
+diagnostic, so caching removes repeated ownership checks but not that read.
+
+The C++ consumer uses `decode_pitch_message_zero_copy`: the message type selects
+a named packed layout read by reference directly from its owned ring slot.
+The writable span allows C++20 object lifetimes to start in place; decoding
+preserves every packet byte and keeps no wire references after processing.
+It still returns a normalized message by value. Reports identify this choice
+as `"pitch_decoder": "packed-zero-copy"`. The byte and copying packed decoders
+remain available for comparison; see the
+[decoder benchmark](../docs/experiments/2026-11-14-zero-copy-decoder.md).
 
 The consumer busy-waits when the ring is empty. Thread affinity is left to the
 OS; this baseline does not select cores or tune the host. Record affinity and
@@ -74,7 +106,14 @@ Keys and per-ID hash values never enter reports. JSON records
 handled normally, with no bucket-length rejection. Book-node allocations remain
 part of the measured work.
 
-This hardened implementation is the selected C++ processor baseline. The earlier tree and XOR/16-entry-cutoff implementations are historical;
+Modifications at the existing price and execution-at-price messages with a
+positive displayed remainder update the aggregate quantity in place, preserving
+the level's order count. Zero remainders remove the order; actual repricing moves
+it between levels. Execution price and size still update last trade independently
+of the resting order's price and displayed remainder. Both languages use this path.
+
+This hardened implementation is the selected C++ processor baseline. The initial
+2026-11-13 tree and subsequent XOR/16-entry-cutoff experiments remain historical;
 the cutoff was removed because valid IDs can collide. Earlier 2026-11-12
 measurements used the default integer hash.
 The [native validation and timing report](../docs/experiments/2026-11-13-siphash.md)
@@ -121,7 +160,7 @@ include the configured `max_live_orders`; sample and packet/gap queue storage re
 separately. With this order limit, aggregate quantities and order counts also
 fit their integer types for every wire quantity.
 
-For experiments, the [external affinity launcher](../benchmark/README.md#cpu-placement)
+For experiments, the [external affinity launcher](../benchmark/README.md#per-thread-affinity)
 can constrain the existing main L2 thread and RX worker before the sender starts.
 It records masks and sampled scheduler counters without changing the C++ binary
 or its timing calls. See the [affinity/NUMA experiment](../docs/experiments/2026-11-12-cpu-affinity.md).
@@ -143,8 +182,9 @@ automatically cancel notifications or repair L2 in this baseline.
 `--gap-slots` sets capacity (default 4096, power of two). The reader publishes
 with `try_push`; a separate single recovery consumer can call `Processor::pop_gap`.
 That method is safe alongside the reader; other Processor state and statistics
-remain reader-owned. The two-thread executable has no recovery consumer, so
-it drains pending ranges to JSON only at shutdown. Reports include
+remain reader-owned. Without `--grp`, the two-thread executable drains pending ranges to JSON only
+at shutdown. Optional recovery resequences before this baseline Processor, so
+its requests and buffering are reported separately under `recovery`. Reports include
 `pending_gap_ranges`, `gap_ranges_enqueued`, and `gap_ranges_dropped`.
 
 A full gap queue drops the new notification and increments its counter without
@@ -162,12 +202,14 @@ The boundaries are:
 
 1. RX thread: timestamp immediately after successful `recvmsg` returns.
 2. Carry that timestamp unchanged in the packet-ring entry.
-3. L2 thread: timestamp after each sampled market message has updated both
-   order state and price-level aggregates.
+3. Consumer thread: timestamp after each sampled market message has updated
+   L2/trades/metadata and decided to emit L1 or suppress an unchanged update.
 4. Store endpoint minus RX timestamp in a preallocated sample array.
 
-`rx_to_l2` therefore includes RX bookkeeping/publication, ring waiting, validation,
-decoding, and L2 work. Messages in one packet share an RX timestamp: later
+`rx_to_l1_decision` therefore includes RX bookkeeping/publication, ring waiting,
+validation, decoding, L2, trade history and the L1 decision. Both emitting and
+non-emitting decisions are sampled. Historical `rx_to_l2` results have a different
+endpoint and are kept separate by the benchmark runner. Messages in one packet share an RX timestamp: later
 messages include work and instrumentation for earlier messages in that packet.
 `queue_wait` separately reports packet dequeue minus RX time as mean/max;
 it includes publication and wake/scheduling delay. It is not pure queue occupancy.
@@ -179,7 +221,9 @@ NIC-to-L2 latency, thread CPU time, or cycle counts. Clock reading/instrumentati
 cost is included and is not subtracted. Nominal clock resolution is recorded;
 it is not a claim of measurement accuracy at that resolution.
 
-Time, Unit Clear, and heartbeat messages have no latency samples. Warmup updates
+Time, Time Reference, Unit Clear, End of Session and heartbeats have no latency
+samples. Status, auction, retail and trade-break messages make sampled decisions.
+Sink callbacks run after the endpoint; the benchmark sink only counts updates. Warmup updates
 still build the book. Percentiles use nearest rank: `ceil(p * N)`, with no
 interpolation. p50/p99/p99.9, min/max/mean, sample counts, losses, ring statistics,
 compiler/build, and receive buffer sizes are in JSON. Printing and JSON/file I/O
@@ -213,18 +257,23 @@ applied twice. A cumulative loss marker travels with each later queued packet,
 so a gap outside the queue cannot be hidden by an otherwise valid ring read.
 
 A Unit Clear received through the normal feed resets L2 and restores state
-integrity for subsequent updates. The processor never requests a resend or reset.
+integrity for subsequent updates. The baseline never requests a resend or reset.
 Continue mode can join mid-session with a partial book; `joined_midstream` marks
 that case without guessing how many earlier messages were missed.
 Loss history remains recorded, and a run with loss cannot become a valid
 benchmark merely because the book recovered. The `book_current` flag means the
 applied prefix is contiguous since its last reset; it does not assert that no
-newer packets are waiting in the network or ring. TCP resend, GRP gap filling,
-and spin/snapshot recovery are outside this project's scope, including the
-planned Rust and DPDK versions. The experiment measures ingestion, L2 updates,
-and loss behavior without repairing missing input. Unsupported message types,
+newer packets are waiting in the network or ring. These paragraphs describe
+the default stop/continue modes. Optional [GRP/spin recovery](../docs/recovery.md)
+buffers and repairs missing input before book updates in C++ and Rust; it is
+not implemented for the planned DPDK version. Unsupported message types,
 malformed framing, and fatal OS errors
-remain fatal; this implements the simulator's equities subset.
+remain fatal; all documented equities multicast message layouts are implemented.
+Unsequenced out-of-session heartbeats are accepted without advancing sequence.
+
+Trade history has a separate `--max-trades` budget; see the [L1 resource and
+validity contract](../docs/pitch-l1.md#validity-and-resource-limits). Unit Clear
+does not reset last trades or restore missing trade history.
 
 Continuous mode survives quiet markets and keeps processing after its latency
 sample window fills; storage stays bounded at `--messages` samples. SIGINT or
@@ -240,6 +289,9 @@ counts arrive as ancillary data on later packets. Truncation is detected using
 
 ## Verification
 
+`pitch_l1` checks shared wire fixtures, truncation, short/expanded forms, trades,
+corrections, L1 decisions and timing; the Rust native suite covers the same cases.
+The shared multicast suite checks every equities layout and final L1 state.
 `processor_core` tests incremental L2 transitions, exact percentile/warmup
 semantics, full 100k-update reconstruction, strict/continuing gap behavior,
 reset recovery, and concurrent variable-length ring wraparound/overflow safety.

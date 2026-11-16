@@ -1,0 +1,27 @@
+{
+  "experiment_date": "2026-11-16",
+  "captured_at_utc": "2026-11-16T20:56:09.198466+00:00",
+  "os": "Debian GNU/Linux 13",
+  "kernel": "6.12.117+deb13-amd64",
+  "pci_id": "10ec:8126",
+  "driver": "r8169",
+  "rx_queues": 1,
+  "tx_queues": 1,
+  "method": "read-only Generic Netlink NETDEV_CMD_DEV_GET",
+  "xdp_features": 0,
+  "native_xdp_basic_advertised": false,
+  "native_xdp_redirect_advertised": false,
+  "af_xdp_zero_copy_advertised": false,
+  "prior_privileged_zero_copy_bind": {
+    "date": "2026-11-13",
+    "evidence": "user-reported probe output",
+    "kernel": "6.12.116+deb13-amd64",
+    "result": "EOPNOTSUPP",
+    "errno": 95
+  },
+  "privileged_bind_repeated": false,
+  "generic_copy_mode_tested": false,
+  "af_xdp_traffic_tested": false,
+  "link_inventory_unchanged": true,
+  "host_settings_changed": false
+}

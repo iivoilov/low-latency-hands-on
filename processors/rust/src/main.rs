@@ -1,4 +1,5 @@
 #![recursion_limit = "512"]
+mod monitor;
 use processor_rust::{
     ring,
     socket::{Receiver, RxStats, Status},
@@ -32,13 +33,18 @@ struct Options {
     ring_slots: usize,
     gap_slots: usize,
     max_live_orders: usize,
+    max_trades: usize,
     idle_ms: u32,
     receive_buffer: i32,
     loss: LossPolicy,
     continuous: bool,
+    monitor_port: Option<u16>,
     output: Option<PathBuf>,
+    recovery: recovery::Options,
+    gap_group: Ipv4Addr,
+    gap_port: u16,
 }
-const HELP:&str="Usage: processor_rust [options]\n  --group IPv4 (239.255.0.1)\n  --interface IPv4 (127.0.0.1)\n  --port N (30001; 0 chooses an ephemeral port)\n  --unit N (1)\n  --messages N (1000000)\n  --warmup-messages N (180)\n  --ring-slots N (4096; power of two)\n  --gap-slots N (4096; power of two)\n  --max-live-orders N (1000000; 1..100000000 simultaneously live orders)\n  --receive-buffer N (4194304)\n  --idle-timeout-ms N (3000)\n  --on-loss stop|continue (stop)\n  --continuous\n  --output PATH (never overwritten)\n  --help\n\nTwo threads: recvmsg -> timestamped packet ring -> PITCH/L2 updates.\nCLOCK_MONOTONIC measures recvmsg return to each message's L2 update.\nControls and warmup are excluded; ring wait and earlier packet messages are included.\n";
+const HELP:&str="Usage: processor_rust [options]\n  --group IPv4 (239.255.0.1)\n  --interface IPv4 (127.0.0.1)\n  --port N (30001; 0 chooses an ephemeral port)\n  --unit N (1)\n  --messages N (1000000)\n  --warmup-messages N (180)\n  --ring-slots N (4096; power of two)\n  --gap-slots N (4096; power of two)\n  --max-live-orders N (1000000; 1..100000000 simultaneously live orders)\n  --max-trades N (1000000; 1..100000000 retained executions)\n  --receive-buffer N (4194304)\n  --idle-timeout-ms N (3000)\n  --on-loss stop|continue (stop)\n  --continuous\n  --monitor-port N (localhost UDP L1/L2; requires --continuous)\n  --grp IPv4:PORT (enable recovery; requires --continuous)\n  --spin-server IPv4:PORT (optional fallback)\n  --gap-group IPv4 (239.255.0.2)\n  --gap-port N (30002)\n  --recovery-buffer N (65536)\n  --recovery-max-gap N (10000)\n  --recovery-timeout-ms N (3000)\n  --output PATH (never overwritten)\n  --help\n\nTwo threads: recvmsg -> timestamped packet ring -> PITCH/L2 and L1 decisions.\nCLOCK_MONOTONIC measures recvmsg return to each message's L1 emit/no-update decision.\nControls and warmup are excluded; ring wait and earlier packet messages are included.\n";
 fn number(value: &str, max: u64) -> Result<u64, String> {
     if value.is_empty() || !value.bytes().all(|b| b.is_ascii_digit()) {
         return Err(format!("Invalid integer {}", value));
@@ -60,11 +66,16 @@ fn options() -> Result<Options, String> {
         ring_slots: 4096,
         gap_slots: 4096,
         max_live_orders: DEFAULT_MAX_ORDERS,
+        max_trades: l1::DEFAULT_MAX_TRADES,
         idle_ms: 3000,
         receive_buffer: 4194304,
         loss: LossPolicy::Stop,
         continuous: false,
+        monitor_port: None,
         output: None,
+        recovery: recovery::Options::default(),
+        gap_group: Ipv4Addr::new(239, 255, 0, 2),
+        gap_port: 30002,
     };
     let mut args = env::args().skip(1);
     while let Some(key) = args.next() {
@@ -87,6 +98,11 @@ fn options() -> Result<Options, String> {
                     .map_err(|e| format!("Invalid interface: {}", e))?
             }
             "--port" => o.port = number(&value, 65535)? as u16,
+            "--monitor-port" => {
+                let port = number(&value, 65535)? as u16;
+                if port == 0 { return Err("Need a nonzero --monitor-port".into()); }
+                o.monitor_port = Some(port);
+            }
             "--unit" => o.unit = number(&value, 255)? as u8,
             "--messages" => o.samples = number(&value, 100000000)? as usize,
             "--warmup-messages" => o.warmup = number(&value, 100000000)?,
@@ -95,6 +111,7 @@ fn options() -> Result<Options, String> {
             "--max-live-orders" => {
                 o.max_live_orders = number(&value, LARGEST_ORDER_LIMIT as u64)? as usize
             }
+            "--max-trades" => o.max_trades = number(&value, LARGEST_ORDER_LIMIT as u64)? as usize,
             "--idle-timeout-ms" => o.idle_ms = number(&value, 60000)? as u32,
             "--receive-buffer" => o.receive_buffer = number(&value, 256 * 1024 * 1024)? as i32,
             "--on-loss" => {
@@ -104,14 +121,23 @@ fn options() -> Result<Options, String> {
                     _ => return Err("--on-loss must be stop or continue".into()),
                 }
             }
+            "--grp" => o.recovery.grp = value,
+            "--spin-server" => o.recovery.spin_server = value,
+            "--gap-group" => o.gap_group = value.parse().map_err(|_| "Invalid replay group")?,
+            "--gap-port" => o.gap_port = number(&value, 65535)? as u16,
+            "--recovery-buffer" => o.recovery.buffer_messages = number(&value, 1000000)? as usize,
+            "--recovery-max-gap" => o.recovery.max_gap = number(&value, 1000000)? as u32,
+            "--recovery-timeout-ms" => o.recovery.timeout_ns = number(&value, 60000)? * 1000000,
             "--output" => o.output = Some(value.into()),
             _ => return Err(format!("Unknown option: {}", key)),
         }
     }
+    if o.monitor_port.is_some() && !o.continuous { return Err("Monitoring requires --continuous".into()); }
     if !o.group.is_multicast()
         || o.unit == 0
         || o.samples == 0
         || o.max_live_orders == 0
+        || o.max_trades == 0
         || o.idle_ms == 0
         || o.receive_buffer == 0
         || !o.ring_slots.is_power_of_two()
@@ -127,6 +153,21 @@ fn options() -> Result<Options, String> {
         || o.interface == Ipv4Addr::BROADCAST
     {
         return Err("Need a concrete unicast --interface address".into());
+    }
+    if (!o.recovery.grp.is_empty()
+        && (!o.continuous
+            || o.gap_port == 0
+            || !o.gap_group.is_multicast()
+            || o.recovery.buffer_messages == 0
+            || o.recovery.max_gap == 0
+            || o.recovery.timeout_ns == 0
+            || (o.gap_group == o.group && o.gap_port == o.port)))
+        || (o.recovery.grp.is_empty() && !o.recovery.spin_server.is_empty())
+    {
+        return Err(
+            "Recovery needs --continuous, --grp, valid bounds and a distinct replay destination"
+                .into(),
+        );
     }
     if o.output.as_ref().is_some_and(|p| p.exists()) {
         return Err("Report already exists".into());
@@ -152,14 +193,14 @@ fn accept(status: Status, stats: &RxStats, o: &Options) -> Result<bool, String> 
             }
         }
         Status::Truncated => {
-            if o.loss == LossPolicy::Stop {
+            if o.loss == LossPolicy::Stop && o.recovery.grp.is_empty() {
                 Err("UDP datagram exceeds the 1472-byte feed limit".into())
             } else {
                 Ok(false)
             }
         }
         Status::Packet => {
-            if stats.kernel_drops > 0 && o.loss == LossPolicy::Stop {
+            if stats.kernel_drops > 0 && o.loss == LossPolicy::Stop && o.recovery.grp.is_empty() {
                 Err("Kernel socket queue reported packet loss".into())
             } else {
                 Ok(true)
@@ -169,6 +210,7 @@ fn accept(status: Status, stats: &RxStats, o: &Options) -> Result<bool, String> 
 }
 fn receive_loop(
     mut receiver: Receiver,
+    mut replay_receiver: Option<Receiver>,
     mut producer: ring::Producer<Received>,
     o: Options,
     stop: Arc<AtomicBool>,
@@ -178,10 +220,53 @@ fn receive_loop(
     let mut stats = RxStats::default();
     let mut scratch = Received::default();
     let result = (|| -> Result<(), String> {
+        let mut prefer_replay = false;
         while !stop.load(Ordering::Relaxed) && !INTERRUPTED.load(Ordering::Relaxed) {
+            let mut from_replay = false;
+            if let Some(replay) = &replay_receiver {
+                let mut fds = [
+                    libc::pollfd {
+                        fd: receiver.raw_fd(),
+                        events: libc::POLLIN,
+                        revents: 0,
+                    },
+                    libc::pollfd {
+                        fd: replay.raw_fd(),
+                        events: libc::POLLIN,
+                        revents: 0,
+                    },
+                ];
+                // SAFETY: fds is initialized writable storage for exactly two descriptors.
+                let ready = unsafe { libc::poll(fds.as_mut_ptr(), 2, 50) };
+                if ready < 0 {
+                    let e = io::Error::last_os_error();
+                    if e.kind() == io::ErrorKind::Interrupted {
+                        continue;
+                    }
+                    return Err(e.to_string());
+                }
+                if ready == 0 {
+                    continue;
+                }
+                if fds
+                    .iter()
+                    .any(|f| f.revents & (libc::POLLERR | libc::POLLNVAL) != 0)
+                {
+                    return Err("Multicast poll error".into());
+                }
+                from_replay = fds[1].revents & libc::POLLIN != 0
+                    && (fds[0].revents & libc::POLLIN == 0 || prefer_replay);
+                prefer_replay = !prefer_replay;
+            }
+            let source = if from_replay {
+                replay_receiver.as_mut().unwrap()
+            } else {
+                &mut receiver
+            };
             {
                 if let Some(mut slot) = producer.reserve() {
-                    let status = receiver.receive(&mut slot, &mut stats)?;
+                    slot.replay = from_replay;
+                    let status = source.receive(&mut slot, &mut stats)?;
                     if matches!(status, Status::Idle)
                         && (stop.load(Ordering::Relaxed) || INTERRUPTED.load(Ordering::Relaxed))
                     {
@@ -195,7 +280,8 @@ fn receive_loop(
                     continue;
                 }
             }
-            let status = receiver.receive(&mut scratch, &mut stats)?;
+            scratch.replay = from_replay;
+            let status = source.receive(&mut scratch, &mut stats)?;
             if matches!(status, Status::Idle)
                 && (stop.load(Ordering::Relaxed) || INTERRUPTED.load(Ordering::Relaxed))
             {
@@ -210,7 +296,7 @@ fn receive_loop(
                 stats.high_watermark = stats.high_watermark.max(slot.commit());
             } else {
                 stats.ring_drops += 1;
-                if o.loss == LossPolicy::Stop {
+                if o.loss == LossPolicy::Stop && o.recovery.grp.is_empty() {
                     return Err("Packet ring overflow".into());
                 }
             }
@@ -244,7 +330,7 @@ fn run(o: Options) -> Result<bool, String> {
         libc::signal(libc::SIGINT, interrupt as *const () as libc::sighandler_t);
         libc::signal(libc::SIGTERM, interrupt as *const () as libc::sighandler_t);
     }
-    let mut processor = Processor::new(
+    let mut processor = Processor::with_trade_limit(
         o.unit,
         o.warmup,
         o.samples,
@@ -252,10 +338,28 @@ fn run(o: Options) -> Result<bool, String> {
         monotonic_ns,
         o.gap_slots,
         o.max_live_orders,
+        o.max_trades,
     )?;
     let mut gaps = processor.take_gap_consumer().unwrap();
+    let mut monitor = o.monitor_port.map(monitor::Monitor::new).transpose()?;
     let (producer, mut consumer) = ring::channel::<Received>(o.ring_slots)?;
     let receiver = Receiver::new(o.group, o.interface, o.port, o.receive_buffer, o.idle_ms)?;
+    let replay_receiver = if o.recovery.grp.is_empty() {
+        None
+    } else {
+        Some(Receiver::new(
+            o.gap_group,
+            o.interface,
+            o.gap_port,
+            o.receive_buffer,
+            o.idle_ms,
+        )?)
+    };
+    let mut recovery = if o.recovery.grp.is_empty() {
+        None
+    } else {
+        Some(recovery::Recovery::new(o.recovery.clone(), o.unit)?)
+    };
     let port = receiver.port;
     let buffer = receiver.buffer;
     let resolution = clock_resolution_ns();
@@ -266,6 +370,7 @@ fn run(o: Options) -> Result<bool, String> {
     let worker = thread::spawn(move || {
         receive_loop(
             receiver,
+            replay_receiver,
             producer,
             worker_options,
             worker_stop,
@@ -281,15 +386,41 @@ fn run(o: Options) -> Result<bool, String> {
     let mut observed_drops = 0;
     let mut error = String::new();
     while !INTERRUPTED.load(Ordering::Relaxed) && (o.continuous || !processor.complete()) {
+        if let Some(r) = &mut recovery {
+            if let Err(e) = r.tick(&mut processor, monotonic_ns()) {
+                error = e;
+                break;
+            }
+        }
+        if let Some(m) = &mut monitor {
+            if let Err(e) = m.heartbeat(&processor) { error = e; break; }
+        }
         if let Some(packet) = consumer.read() {
             queue.record(monotonic_ns() - packet.rx_ns);
             if packet.dropped_before != observed_drops {
-                processor.note_loss();
+                if let Some(r) = &mut recovery {
+                    r.note_loss(&mut processor, monotonic_ns());
+                } else {
+                    processor.note_loss();
+                }
                 observed_drops = packet.dropped_before;
             }
-            if let Err(e) = processor.process(&packet.bytes[..packet.len], packet.rx_ns) {
+            let result = if let Some(r) = &mut recovery {
+                r.receive(
+                    &mut processor,
+                    &packet.bytes[..packet.len],
+                    packet.rx_ns,
+                    packet.replay,
+                )
+            } else {
+                processor.process(&packet.bytes[..packet.len], packet.rx_ns)
+            };
+            if let Err(e) = result {
                 error = e;
                 break;
+            }
+            if let Some(m) = &mut monitor {
+                if let Err(e) = m.publish(&processor, false, false) { error = e; break; }
             }
             continue;
         }
@@ -304,10 +435,18 @@ fn run(o: Options) -> Result<bool, String> {
         ..RxStats::default()
     });
     if observed_drops != rx.kernel_drops + rx.ring_drops + rx.truncated {
-        processor.note_loss();
+        if let Some(r) = &mut recovery {
+            r.note_loss(&mut processor, monotonic_ns());
+        } else {
+            processor.note_loss();
+        }
     }
     if error.is_empty() {
         error = rx.error.clone();
+    }
+    if let Some(m) = &mut monitor {
+        m.publish(&processor, !error.is_empty(), false)?;
+        eprintln!("Monitor UDP send drops: {}", m.dropped);
     }
     let cancelled = INTERRUPTED.load(Ordering::Relaxed);
     if !o.continuous && cancelled && error.is_empty() {
@@ -327,20 +466,55 @@ fn run(o: Options) -> Result<bool, String> {
         gap_ranges.push(gap_json(&g));
     }
     let levels:Vec<Value>=book.iter().map(|l|json!({"symbol":l.symbol,"side":l.side.to_string(),"price_1e4":l.price_1e4,"quantity":l.quantity,"orders":l.orders})).collect();
-    let report = json!({
+    let quote_json =
+        |q: Option<Quote>| q.map(|q| json!({"price_1e4": q.price, "quantity": q.quantity}));
+    let auction_json = |m: Option<pitch::Message>| {
+        m.map(|m| json!({"auction_type":(m.auction_type as char).to_string(),
+        "price_1e4":m.price,"quantity":m.quantity,"buy_quantity":m.buy_quantity,"sell_quantity":m.sell_quantity,
+        "indicative_price_1e4":m.indicative_price,"auction_only_price_1e4":m.auction_only_price}))
+    };
+    let l1: Vec<Value> = processor.l1.symbols.iter().map(|(symbol, state)| {
+        let l = &state.l1;
+        json!({"symbol":std::str::from_utf8(symbol).unwrap().trim_end_matches(' '),
+            "bid":quote_json(l.bid),"ask":quote_json(l.ask),
+            "last":l.last.map(|t|json!({"execution_id":t.execution_id,"price_1e4":t.price,"quantity":t.quantity,"trade_date":t.trade_date})),
+            "trading_status":(l.trading_status as char).to_string(),"reg_sho":(l.reg_sho as char).to_string(),
+            "retail":(l.retail as char).to_string(),"book_current":processor.book_current() && error.is_empty(),
+            "trade_history_current":l.trade_history_current,"auction_update":auction_json(state.auction_update),
+            "auction_summary":auction_json(state.auction_summary)})
+    }).collect();
+    let time_json = |m: pitch::Message| {
+        if m.kind == 0 {
+            Value::Null
+        } else {
+            json!({"seconds":m.seconds,
+        "epoch_seconds":m.epoch_seconds,"midnight_reference":m.midnight_reference,"trade_date":m.trade_date,"time_offset_ns":m.time_offset})
+        }
+    };
+    let mut report = json!({
         "implementation":"rust-os","compiler":env!("PROCESSOR_COMPILER"),"build_type":env!("PROCESSOR_BUILD_TYPE"),
         "receive_api":"recvmsg","consumer_wait":"busy_spin","order_container":"std::collections::HashMap (RandomState)","level_container":"std::collections::BTreeMap","threads":2,
-        "continuous":o.continuous,"loss_policy":if o.loss==LossPolicy::Stop {"stop"}else{"continue"},"benchmark_valid":valid,"complete":processor.complete(),"book_current":processor.book_current() && error.is_empty(),"error":error,
-        "clock":"CLOCK_MONOTONIC","clock_resolution_ns":resolution,"timing_boundary":"recvmsg_return_to_message_l2_update",
+        "continuous":o.continuous,"monitoring_enabled":o.monitor_port.is_some(),"loss_policy":if recovery.is_some() {"recover"}else if o.loss==LossPolicy::Stop {"stop"}else{"continue"},"benchmark_valid":valid,"complete":processor.complete(),"book_current":processor.book_current() && error.is_empty(),"error":error,
+        "clock":"CLOCK_MONOTONIC","clock_resolution_ns":resolution,"timing_boundary":"recvmsg_return_to_message_l1_decision",
         "group":o.group.to_string(),"interface":o.interface.to_string(),"max_live_orders":processor.book.max_orders(),"unit":o.unit,"target_samples":o.samples,"warmup_target":o.warmup,"warmup_messages":s.warmup_messages,
-        "received_packets":rx.packets,"processed_packets":s.packets,"other_unit_packets":s.other_unit_packets,"pitch_messages":s.pitch_messages,"market_messages":s.market_messages,"applied_market_messages":s.applied_market_messages,"skipped_market_messages":s.skipped_market_messages,
+        "received_packets":rx.packets,"processed_packets":s.packets,"unsequenced_heartbeats":s.unsequenced_heartbeats,"other_unit_packets":s.other_unit_packets,"pitch_messages":s.pitch_messages,"market_messages":s.market_messages,"applied_market_messages":s.applied_market_messages,"skipped_market_messages":s.skipped_market_messages,
         "received_payload_bytes":rx.bytes,"receive_span_ns":rx.last_rx-rx.first_rx,"receive_buffer_requested":o.receive_buffer,"receive_buffer_actual":buffer,"kernel_drop_counter_available":true,"kernel_dropped_packets":rx.kernel_drops,
         "ring_slots":o.ring_slots,"ring_high_watermark":rx.high_watermark,"ring_dropped_packets":rx.ring_drops,"truncated_packets":rx.truncated,"sequence_errors":s.sequence_errors,"missing_messages":s.missing_messages,"joined_midstream":s.joined_midstream,"out_of_order_packets":s.out_of_order_packets,"protocol_errors":s.protocol_errors,
         "gap_queue_capacity":o.gap_slots,"gap_ranges_enqueued":s.gap_ranges_enqueued,"gap_ranges_dropped":s.gap_ranges_dropped,"pending_gap_ranges":gap_ranges,
         "queue_wait":{"packets":queue.packets,"mean_ns":if queue.packets>0 {queue.sum as f64/queue.packets as f64}else{0.0},"max_ns":queue.maximum},
-        "rx_to_l2":{"samples":latency.samples,"min_ns":latency.min_ns,"p50_ns":latency.p50_ns,"p99_ns":latency.p99_ns,"p99_9_ns":latency.p99_9_ns,"max_ns":latency.max_ns,"mean_ns":latency.mean_ns},
-        "live_orders":processor.book.order_count(),"final_book":levels
+        "rx_to_l1_decision":{"samples":latency.samples,"min_ns":latency.min_ns,"p50_ns":latency.p50_ns,"p99_ns":latency.p99_ns,"p99_9_ns":latency.p99_9_ns,"max_ns":latency.max_ns,"mean_ns":latency.mean_ns},
+        "live_orders":processor.book.order_count(),"final_book":levels,"final_l1":l1,
+        "l1_decisions":s.l1_decisions,"l1_updates":s.l1_updates,"l1_no_updates":s.l1_no_updates,
+        "max_trades":processor.l1.max_trades(),"retained_trades":processor.l1.trade_count(),
+        "max_retained_symbols":processor.book.max_orders(),"trade_history_current":processor.l1.trade_history_current(),
+        "session_ended":processor.session_ended,"feed_time":time_json(processor.time),"time_reference":time_json(processor.time_reference)
     });
+    if let Some(r) = &recovery {
+        let s = &r.stats;
+        report["recovery"] = json!({"active":r.active,"gaps":s.gaps,"requests":s.requests,"rejections":s.rejections,
+            "duplicates":s.duplicates,"replay_messages":s.replay_messages,"spins":s.spins,
+            "buffered_high_watermark":s.buffered_high_watermark,"timeouts":s.timeouts,"buffer_overflows":s.buffer_overflows,"completed":s.completed,"total_ns":s.total_ns,"max_ns":s.max_ns});
+    }
     let json = serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?;
     if let Some(path) = &o.output {
         let mut file = OpenOptions::new()

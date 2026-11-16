@@ -1,0 +1,134 @@
+{
+  "experiment_date": "2026-11-16",
+  "host": "epyc",
+  "os": "Debian GNU/Linux 13 (trixie)",
+  "kernel": "6.12.117+deb13-amd64",
+  "cpu_possible": "0-255",
+  "cpu_online": "0-255",
+  "tested_interface": "eno2",
+  "bond_active_member": "eno1",
+  "bond_members": [
+    "eno1",
+    "eno2"
+  ],
+  "pci": {
+    "eno1": {
+      "driver": "ixgbe",
+      "pci_vendor": "0x8086",
+      "pci_device": "0x1563"
+    },
+    "eno2": {
+      "driver": "ixgbe",
+      "pci_vendor": "0x8086",
+      "pci_device": "0x1563"
+    }
+  },
+  "program": "Two instructions: return XDP_PASS",
+  "program_load": "success",
+  "native_attach": {
+    "status": -12,
+    "errno": 12,
+    "error": "Cannot allocate memory"
+  },
+  "attachment_attempts": 1,
+  "generic_fallback": false,
+  "program_ids_final": {
+    "bond0": {
+      "2": 0,
+      "4": 0,
+      "8": 0
+    },
+    "eno1": {
+      "2": 0,
+      "4": 0,
+      "8": 0
+    },
+    "eno2": {
+      "2": 0,
+      "4": 0,
+      "8": 0
+    }
+  },
+  "bind_probes": [
+    {
+      "interface": "eno2",
+      "mode": "zero-copy",
+      "returncode": 0,
+      "stdout": "interface=eno2 ifindex=3 queue=0 mode=XDP_ZEROCOPY\nsetup=ok umem_bytes=262144 chunk_bytes=4096 ring_entries=64\nbind=ok XDP_OPTIONS_ZEROCOPY=1\n",
+      "stderr": ""
+    },
+    {
+      "interface": "bond0",
+      "mode": "zero-copy",
+      "returncode": 1,
+      "stdout": "interface=bond0 ifindex=4 queue=0 mode=XDP_ZEROCOPY\nsetup=ok umem_bytes=262144 chunk_bytes=4096 ring_entries=64\n",
+      "stderr": "error=bind: Operation not supported errno=95\n"
+    },
+    {
+      "interface": "bond0",
+      "mode": "copy",
+      "returncode": 0,
+      "stdout": "interface=bond0 ifindex=4 queue=0 mode=XDP_COPY\nsetup=ok umem_bytes=262144 chunk_bytes=4096 ring_entries=64\nbind=ok XDP_OPTIONS_ZEROCOPY=0\n",
+      "stderr": ""
+    }
+  ],
+  "driver_verification": {
+    "module_sha256": "2f5045cda34ba3d5d6350c5e82463b3d8bdeb3c5cf6f45ff79b6217a9444e289",
+    "loaded_build_id": "f8e4888bd6f4298b92b2f10ca882d10b03e9adab",
+    "file_build_id": "f8e4888bd6f4298b92b2f10ca882d10b03e9adab",
+    "build_ids_match": true,
+    "source_cpu_guard": 128,
+    "host_possible_cpus": 256,
+    "disassembly_guard": "ixgbe_xdp: compare nr_cpu_ids with 0x80; jump above to return 0xfffffff4 (-12)",
+    "module_initstate": "live",
+    "module_taint": ""
+  },
+  "metadata_name_presence_only": {
+    "vmlinux": {
+      "btf_exists": true,
+      "rx_timestamp_name_present": true
+    },
+    "ixgbe": {
+      "btf_exists": true,
+      "rx_timestamp_name_present": false
+    }
+  },
+  "probe_source_sha256": "2e301559aaad00b7d0ad42d5ea56b14d992607ea404ac068a1bbd7386bf550cb",
+  "probe_binary_sha256": "d92bd716e175297625e0776dfe1d1a1a77d7dd260067988dfff04885bf1b06ee",
+  "readiness_script_sha256": "092306fd26374aaacb3fff896a245e7daa80613d7d7c14f7db4b3d11bd71e5c1",
+  "compile": {
+    "compiler": "g++ (Debian 14.2.0-19) 14.2.0",
+    "flags": [
+      "-std=c++20",
+      "-O2",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "verification": {
+    "native_inventory_unchanged": true,
+    "bind_inventory_unchanged": true,
+    "all_xdp_attachments_restored": true,
+    "no_existing_attachment_replaced": true,
+    "bond_membership_active_port_addresses_routes_mtu_unchanged": true,
+    "independent_final_attachment_query_zero": true
+  },
+  "af_xdp_traffic_packets": 0,
+  "latency_samples": 0,
+  "limitations": [
+    "Bind success establishes socket mode only, not packet delivery.",
+    "Native XDP attachment remains blocked by the installed ixgbe 128-CPU guard.",
+    "No generic-XDP fallback, CPU offlining, boot changes, module replacement or network tuning was attempted.",
+    "Hardware RX timestamp extraction through AF_XDP remains unverified."
+  ],
+  "attempts": [
+    "Native XDP_PASS load succeeded; one native attach failed ENOMEM; no attachment remained.",
+    "Initial read-only module inspection stopped because sysfs srcversion is absent; preserved failed log.",
+    "Corrected inspection verified live/file ELF build IDs and completed three bind-only controls."
+  ]
+}

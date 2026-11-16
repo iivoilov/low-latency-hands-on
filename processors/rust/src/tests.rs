@@ -253,7 +253,7 @@ fn malformed_unknown_and_missing_initialization_are_fatal() {
         assert!(p.process(&datagram(1, vec![]), 0).is_err());
     }
     let mut p = engine(LossPolicy::Stop, 4);
-    assert!(p.process(&datagram(0, vec![]), 0).is_err());
+    assert!(p.process(&datagram(0, vec![control(0x97)]), 0).is_err());
     let mut bytes = datagram(1, vec![control(0x97)]);
     bytes[8] = 1;
     assert!(validate_pitch(&bytes).is_err());
@@ -282,6 +282,34 @@ fn ring_full_reservations_and_wraparound_preserve_packets() {
     } // Dropping an uncommitted reservation publishes nothing.
     assert_eq!(rx.read().unwrap().len, 200);
     assert!(rx.is_empty());
+}
+#[test]
+fn ring_bursts_refresh_cached_positions_and_preserve_depth() {
+    let (mut tx, mut rx) = ring::channel::<u64>(4).unwrap();
+    for round in 0..1000 {
+        for i in 0..3 {
+            let mut slot = tx.reserve().unwrap();
+            *slot = round * 4 + i;
+            assert_eq!(slot.commit(), i as usize + 1);
+        }
+        assert_eq!(rx.try_pop(), Some(round * 4));
+        let mut slot = tx.reserve().unwrap();
+        *slot = round * 4 + 3;
+        assert_eq!(slot.commit(), 3); // The cached read is stale; depth must not be.
+        assert!(!rx.is_empty());
+        for i in 1..4 {
+            assert_eq!(rx.try_pop(), Some(round * 4 + i));
+        }
+        assert!(rx.is_empty());
+        assert!(rx.read().is_none());
+        for _ in 0..4 {
+            assert!(tx.try_push(42));
+        }
+        assert!(!tx.try_push(43));
+        for _ in 0..4 {
+            assert_eq!(rx.try_pop(), Some(42));
+        }
+    }
 }
 #[test]
 fn concurrent_variable_packets_and_gap_handoff() {

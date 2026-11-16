@@ -1,0 +1,1053 @@
+{
+  "experiment_date": "2026-11-16",
+  "status": "complete-local-unqualified",
+  "environment": "Intel Core i9-13900K; WSL2; local IPv4 loopback",
+  "kernel": "6.6.87.2-microsoft-standard-WSL2",
+  "toolchains": {
+    "cpp": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+    "rust": "rustc 1.80.1 (3f5fd8dd4 2024-08-06)\nbinary: rustc\ncommit-hash: 3f5fd8dd41153bc5fdca9427e9e05be2c767ba23\ncommit-date: 2024-08-06\nhost: x86_64-unknown-linux-gnu\nrelease: 1.80.1\nLLVM version: 18.1.7\n",
+    "cargo": "cargo 1.80.1 (376290515 2024-07-16)\n"
+  },
+  "cpp_flags": "GCC 12.2; Release -O3 -DNDEBUG; no LTO; default target",
+  "rust_profile": {
+    "rustc": "1.80.1",
+    "opt_level": 3,
+    "lto": false,
+    "codegen_units": 16
+  },
+  "affinity": {
+    "rx_cpu": 2,
+    "l2_cpu": 4,
+    "sender_cpu": 6,
+    "observer_cpu": 8
+  },
+  "timing_boundary": "recvmsg_return_to_message_l1_decision",
+  "clock": "CLOCK_MONOTONIC",
+  "units": "ns",
+  "workload": {
+    "profile": "S1",
+    "sha256": "29a3dbdc32f47e60cc391683c1393117b527364c12ae77b0eda733c7d06a2596",
+    "symbols": 503,
+    "seed": 44,
+    "updates": 1000000,
+    "initialization_messages": 30180,
+    "packets": 128774,
+    "background_mbps": 8,
+    "burst_mbps": 20,
+    "burst_duration_ms": 10,
+    "burst_period_ms": 100,
+    "same_price_positive_modifications": 24325,
+    "modifications": 243280
+  },
+  "method": {
+    "repeats": 3,
+    "seed": 20261116,
+    "variants": [
+      "baseline",
+      "ring",
+      "quantity",
+      "both"
+    ],
+    "languages": [
+      "cpp",
+      "rust"
+    ],
+    "expected_trials": 24,
+    "valid_trials": 24,
+    "samples_per_trial": 1000000,
+    "summary": "median of per-run nearest-rank percentiles; positive changes mean slower",
+    "retries": 0
+  },
+  "verification": {
+    "cpp_ctest_offline": 11,
+    "cpp_ctest_network": 4,
+    "rust_native": 20,
+    "shared_rust_cli_multicast_recovery": "passed",
+    "benchmark_tool_tests": 6,
+    "sandbox_network_attempt": "socket creation denied; all four CTests passed with local socket access",
+    "native_tests_each_source_variant": "C++ processor_core/pitch_l1 and 20 Rust tests passed",
+    "postflight_sources_and_binaries_match": true
+  },
+  "sources": {
+    "baseline-cpp": {
+      "binary_sha256": "df03f0f7e0e8d072a70683c7a14cc816be5131782045eb18d7b7927a8e2f6d0c",
+      "source_manifest_sha256": "c78adcb35569a1d436c0d712d1e075ebf74668f347163beabf2e093986642f51",
+      "implementation_files": {
+        "processors/cpp/include/low_latency/packet_ring.hpp": "825b2d4b3755a9af1838a47416a6b5fd704e5434019efe4044dc3416ee8b3589",
+        "processors/cpp/src/processor.cpp": "20f3933657bfeee104db4e7d936aa025453532ded90a63bbce469fc6b3d8219a",
+        "processors/rust/src/lib.rs": "8046a721ebc7984abbfc79f472d7c67e2e5d6861326cb741ca7a3ad76c8fe60d",
+        "processors/rust/src/ring.rs": "8353b1d37307bea9fe41bcb095b167af74b10f02f982a3ab165429a1112ab20b"
+      }
+    },
+    "baseline-rust": {
+      "binary_sha256": "7883ad4a5097b0310e7aeac66760a0076970adf28d8d26e807830cdad760594e",
+      "source_manifest_sha256": "c78adcb35569a1d436c0d712d1e075ebf74668f347163beabf2e093986642f51",
+      "implementation_files": {
+        "processors/cpp/include/low_latency/packet_ring.hpp": "825b2d4b3755a9af1838a47416a6b5fd704e5434019efe4044dc3416ee8b3589",
+        "processors/cpp/src/processor.cpp": "20f3933657bfeee104db4e7d936aa025453532ded90a63bbce469fc6b3d8219a",
+        "processors/rust/src/lib.rs": "8046a721ebc7984abbfc79f472d7c67e2e5d6861326cb741ca7a3ad76c8fe60d",
+        "processors/rust/src/ring.rs": "8353b1d37307bea9fe41bcb095b167af74b10f02f982a3ab165429a1112ab20b"
+      }
+    },
+    "ring-cpp": {
+      "binary_sha256": "03cadab79cb86332f9e7e68d6cbc96673d551713daa921dd8597562eb0c92b3a",
+      "source_manifest_sha256": "823308e4dd748fabfd214b83a555a90b39339716d8dd1c99961532dd9d9fb7eb",
+      "implementation_files": {
+        "processors/cpp/include/low_latency/packet_ring.hpp": "ae46bd81aaf6cecbb954004e9211ff10171b0fa90cf2607d126a29b4b7ec76c6",
+        "processors/cpp/src/processor.cpp": "20f3933657bfeee104db4e7d936aa025453532ded90a63bbce469fc6b3d8219a",
+        "processors/rust/src/lib.rs": "8046a721ebc7984abbfc79f472d7c67e2e5d6861326cb741ca7a3ad76c8fe60d",
+        "processors/rust/src/ring.rs": "ec59f908abe81975b8279471c43ef04f2218e7b2200abe4ad347adf1d4daca49"
+      }
+    },
+    "ring-rust": {
+      "binary_sha256": "069f866d924b7d8a52b9649f561c71352268164870be2625a186c9b4710bedd0",
+      "source_manifest_sha256": "823308e4dd748fabfd214b83a555a90b39339716d8dd1c99961532dd9d9fb7eb",
+      "implementation_files": {
+        "processors/cpp/include/low_latency/packet_ring.hpp": "ae46bd81aaf6cecbb954004e9211ff10171b0fa90cf2607d126a29b4b7ec76c6",
+        "processors/cpp/src/processor.cpp": "20f3933657bfeee104db4e7d936aa025453532ded90a63bbce469fc6b3d8219a",
+        "processors/rust/src/lib.rs": "8046a721ebc7984abbfc79f472d7c67e2e5d6861326cb741ca7a3ad76c8fe60d",
+        "processors/rust/src/ring.rs": "ec59f908abe81975b8279471c43ef04f2218e7b2200abe4ad347adf1d4daca49"
+      }
+    },
+    "quantity-cpp": {
+      "binary_sha256": "893162d42f1a8c6123519656cca78974260bb6fc93acede82a9a849555e49e71",
+      "source_manifest_sha256": "5c617b6e8e1e1fa8dda9f617c92aec80afb10fe87c5ed39aec2c888c81f94e43",
+      "implementation_files": {
+        "processors/cpp/include/low_latency/packet_ring.hpp": "825b2d4b3755a9af1838a47416a6b5fd704e5434019efe4044dc3416ee8b3589",
+        "processors/cpp/src/processor.cpp": "edad2f3f2078b1f993d169694ace28e8a1ce660f74c3f24f90864d75397d06d8",
+        "processors/rust/src/lib.rs": "a35098a1ff134954e1ba9a914416edfdaf2e3b7738a91b0beb6cefad45bd2c2e",
+        "processors/rust/src/ring.rs": "8353b1d37307bea9fe41bcb095b167af74b10f02f982a3ab165429a1112ab20b"
+      }
+    },
+    "quantity-rust": {
+      "binary_sha256": "be59f6d3c3af341cd85fe630fd6a69b64a22a85782fd5f725d2840beed5d9aa7",
+      "source_manifest_sha256": "5c617b6e8e1e1fa8dda9f617c92aec80afb10fe87c5ed39aec2c888c81f94e43",
+      "implementation_files": {
+        "processors/cpp/include/low_latency/packet_ring.hpp": "825b2d4b3755a9af1838a47416a6b5fd704e5434019efe4044dc3416ee8b3589",
+        "processors/cpp/src/processor.cpp": "edad2f3f2078b1f993d169694ace28e8a1ce660f74c3f24f90864d75397d06d8",
+        "processors/rust/src/lib.rs": "a35098a1ff134954e1ba9a914416edfdaf2e3b7738a91b0beb6cefad45bd2c2e",
+        "processors/rust/src/ring.rs": "8353b1d37307bea9fe41bcb095b167af74b10f02f982a3ab165429a1112ab20b"
+      }
+    },
+    "both-cpp": {
+      "binary_sha256": "a341be14d99b72822e9c217e86ebb558f2710c0f2c8e4ecdd937f289e1398497",
+      "source_manifest_sha256": "24fe0dc4ee2375691f487407f9b7e3f06d4879ac35c66fa1bbbdba6a2cf40dc2",
+      "implementation_files": {
+        "processors/cpp/include/low_latency/packet_ring.hpp": "ae46bd81aaf6cecbb954004e9211ff10171b0fa90cf2607d126a29b4b7ec76c6",
+        "processors/cpp/src/processor.cpp": "edad2f3f2078b1f993d169694ace28e8a1ce660f74c3f24f90864d75397d06d8",
+        "processors/rust/src/lib.rs": "a35098a1ff134954e1ba9a914416edfdaf2e3b7738a91b0beb6cefad45bd2c2e",
+        "processors/rust/src/ring.rs": "ec59f908abe81975b8279471c43ef04f2218e7b2200abe4ad347adf1d4daca49"
+      }
+    },
+    "both-rust": {
+      "binary_sha256": "30a1138388d7df8766d3272359dfcf63bda28163c5610f76891a3432baebb5e9",
+      "source_manifest_sha256": "24fe0dc4ee2375691f487407f9b7e3f06d4879ac35c66fa1bbbdba6a2cf40dc2",
+      "implementation_files": {
+        "processors/cpp/include/low_latency/packet_ring.hpp": "ae46bd81aaf6cecbb954004e9211ff10171b0fa90cf2607d126a29b4b7ec76c6",
+        "processors/cpp/src/processor.cpp": "edad2f3f2078b1f993d169694ace28e8a1ce660f74c3f24f90864d75397d06d8",
+        "processors/rust/src/lib.rs": "a35098a1ff134954e1ba9a914416edfdaf2e3b7738a91b0beb6cefad45bd2c2e",
+        "processors/rust/src/ring.rs": "ec59f908abe81975b8279471c43ef04f2218e7b2200abe4ad347adf1d4daca49"
+      }
+    }
+  },
+  "limitations": [
+    "One local S1 profile; not the selected separate-host ryzen baseline.",
+    "Three repetitions; small median changes do not establish a stable speedup.",
+    "Measured tail regressions are retained; their cause is unassigned.",
+    "Virtual CPU affinity does not reserve physical Windows-host cores.",
+    "Publication still reads shared consumer position for depth reporting.",
+    "No remote deployment, host tuning or package installation."
+  ],
+  "summary": [
+    {
+      "variant": "baseline-cpp",
+      "language": "cpp",
+      "change": "baseline",
+      "attempts": 3,
+      "valid_runs": 3,
+      "p50_ns": 4756,
+      "p99_ns": 22083,
+      "p99_9_ns": 121202,
+      "min_p99_9_ns": 113759,
+      "max_p99_9_ns": 129972,
+      "p50_ns_change_pct": 0.0,
+      "p99_ns_change_pct": 0.0,
+      "p99_9_ns_change_pct": 0.0
+    },
+    {
+      "variant": "baseline-rust",
+      "language": "rust",
+      "change": "baseline",
+      "attempts": 3,
+      "valid_runs": 3,
+      "p50_ns": 4520,
+      "p99_ns": 24057,
+      "p99_9_ns": 113453,
+      "min_p99_9_ns": 102741,
+      "max_p99_9_ns": 132410,
+      "p50_ns_change_pct": 0.0,
+      "p99_ns_change_pct": 0.0,
+      "p99_9_ns_change_pct": 0.0
+    },
+    {
+      "variant": "ring-cpp",
+      "language": "cpp",
+      "change": "ring",
+      "attempts": 3,
+      "valid_runs": 3,
+      "p50_ns": 4754,
+      "p99_ns": 24133,
+      "p99_9_ns": 154769,
+      "min_p99_9_ns": 108390,
+      "max_p99_9_ns": 183762,
+      "p50_ns_change_pct": -0.0420521446593769,
+      "p99_ns_change_pct": 9.283158991079121,
+      "p99_9_ns_change_pct": 27.69508753980958
+    },
+    {
+      "variant": "ring-rust",
+      "language": "rust",
+      "change": "ring",
+      "attempts": 3,
+      "valid_runs": 3,
+      "p50_ns": 4491,
+      "p99_ns": 26205,
+      "p99_9_ns": 130617,
+      "min_p99_9_ns": 123181,
+      "max_p99_9_ns": 147503,
+      "p50_ns_change_pct": -0.6415929203539839,
+      "p99_ns_change_pct": 8.928794113979288,
+      "p99_9_ns_change_pct": 15.128731721505817
+    },
+    {
+      "variant": "quantity-cpp",
+      "language": "cpp",
+      "change": "quantity",
+      "attempts": 3,
+      "valid_runs": 3,
+      "p50_ns": 4723,
+      "p99_ns": 22662,
+      "p99_9_ns": 136566,
+      "min_p99_9_ns": 112391,
+      "max_p99_9_ns": 157745,
+      "p50_ns_change_pct": -0.69386038687973,
+      "p99_ns_change_pct": 2.6219263686999117,
+      "p99_9_ns_change_pct": 12.676358475932737
+    },
+    {
+      "variant": "quantity-rust",
+      "language": "rust",
+      "change": "quantity",
+      "attempts": 3,
+      "valid_runs": 3,
+      "p50_ns": 4502,
+      "p99_ns": 24452,
+      "p99_9_ns": 129679,
+      "min_p99_9_ns": 127931,
+      "max_p99_9_ns": 146493,
+      "p50_ns_change_pct": -0.39823008849557695,
+      "p99_ns_change_pct": 1.641933740699164,
+      "p99_9_ns_change_pct": 14.301957638846051
+    },
+    {
+      "variant": "both-cpp",
+      "language": "cpp",
+      "change": "both",
+      "attempts": 3,
+      "valid_runs": 3,
+      "p50_ns": 4772,
+      "p99_ns": 23456,
+      "p99_9_ns": 133485,
+      "min_p99_9_ns": 122474,
+      "max_p99_9_ns": 145566,
+      "p50_ns_change_pct": 0.3364171572750152,
+      "p99_ns_change_pct": 6.217452338903229,
+      "p99_9_ns_change_pct": 10.134321215821519
+    },
+    {
+      "variant": "both-rust",
+      "language": "rust",
+      "change": "both",
+      "attempts": 3,
+      "valid_runs": 3,
+      "p50_ns": 4498,
+      "p99_ns": 24961,
+      "p99_9_ns": 155079,
+      "min_p99_9_ns": 112380,
+      "max_p99_9_ns": 178646,
+      "p50_ns_change_pct": -0.4867256637168138,
+      "p99_ns_change_pct": 3.7577420293469777,
+      "p99_9_ns_change_pct": 36.69008311811939
+    }
+  ],
+  "trials": [
+    {
+      "variant": "baseline-cpp",
+      "repeat": 1,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 316,
+        "p50_ns": 4557,
+        "p99_ns": 22083,
+        "p99_9_ns": 129972,
+        "max_ns": 402198,
+        "mean_ns": 5444.653559
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 647.795205516684,
+        "max_ns": 366204
+      },
+      "sender_mbps": 9.18551,
+      "ring_high_watermark": 25
+    },
+    {
+      "variant": "both-cpp",
+      "repeat": 1,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 338,
+        "p50_ns": 4744,
+        "p99_ns": 22603,
+        "p99_9_ns": 133485,
+        "max_ns": 472877,
+        "mean_ns": 5659.5572
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 618.735790887841,
+        "max_ns": 431855
+      },
+      "sender_mbps": 9.19322,
+      "ring_high_watermark": 20
+    },
+    {
+      "variant": "quantity-cpp",
+      "repeat": 1,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 327,
+        "p50_ns": 4742,
+        "p99_ns": 24232,
+        "p99_9_ns": 136566,
+        "max_ns": 1924732,
+        "mean_ns": 5802.926204
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 741.246076429065,
+        "max_ns": 1900664
+      },
+      "sender_mbps": 9.19233,
+      "ring_high_watermark": 20
+    },
+    {
+      "variant": "ring-cpp",
+      "repeat": 1,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 324,
+        "p50_ns": 4743,
+        "p99_ns": 24257,
+        "p99_9_ns": 154769,
+        "max_ns": 448695,
+        "mean_ns": 5754.686105
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 741.274972237969,
+        "max_ns": 419715
+      },
+      "sender_mbps": 9.19112,
+      "ring_high_watermark": 35
+    },
+    {
+      "variant": "both-rust",
+      "repeat": 1,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 1979566,
+        "mean_ns": 5931.886311,
+        "min_ns": 358,
+        "p50_ns": 4496,
+        "p99_9_ns": 178646,
+        "p99_ns": 34653,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 1967919,
+        "mean_ns": 907.80373214882,
+        "packets": 128773
+      },
+      "sender_mbps": 9.18751,
+      "ring_high_watermark": 44
+    },
+    {
+      "variant": "quantity-rust",
+      "repeat": 1,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 522140,
+        "mean_ns": 5421.157815,
+        "min_ns": 333,
+        "p50_ns": 4466,
+        "p99_9_ns": 127931,
+        "p99_ns": 24736,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 506478,
+        "mean_ns": 636.7560125181521,
+        "packets": 128773
+      },
+      "sender_mbps": 9.19224,
+      "ring_high_watermark": 10
+    },
+    {
+      "variant": "baseline-rust",
+      "repeat": 1,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 278703,
+        "mean_ns": 5368.791672,
+        "min_ns": 361,
+        "p50_ns": 4520,
+        "p99_9_ns": 102741,
+        "p99_ns": 24057,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 258776,
+        "mean_ns": 569.8612209081097,
+        "packets": 128773
+      },
+      "sender_mbps": 9.19534,
+      "ring_high_watermark": 31
+    },
+    {
+      "variant": "ring-rust",
+      "repeat": 1,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 475337,
+        "mean_ns": 5457.243111,
+        "min_ns": 363,
+        "p50_ns": 4491,
+        "p99_9_ns": 130617,
+        "p99_ns": 24517,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 362673,
+        "mean_ns": 651.6449721603132,
+        "packets": 128773
+      },
+      "sender_mbps": 9.1933,
+      "ring_high_watermark": 22
+    },
+    {
+      "variant": "quantity-rust",
+      "repeat": 2,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 385776,
+        "mean_ns": 5442.019911,
+        "min_ns": 339,
+        "p50_ns": 4502,
+        "p99_9_ns": 129679,
+        "p99_ns": 24113,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 335354,
+        "mean_ns": 666.709077213391,
+        "packets": 128773
+      },
+      "sender_mbps": 9.19183,
+      "ring_high_watermark": 24
+    },
+    {
+      "variant": "both-cpp",
+      "repeat": 2,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 288,
+        "p50_ns": 4963,
+        "p99_ns": 27457,
+        "p99_9_ns": 145566,
+        "max_ns": 611526,
+        "mean_ns": 6080.772298
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 764.039208529738,
+        "max_ns": 563810
+      },
+      "sender_mbps": 9.19021,
+      "ring_high_watermark": 30
+    },
+    {
+      "variant": "ring-rust",
+      "repeat": 2,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 324032,
+        "mean_ns": 5481.231506,
+        "min_ns": 317,
+        "p50_ns": 4518,
+        "p99_9_ns": 123181,
+        "p99_ns": 26205,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 296973,
+        "mean_ns": 636.3607976827441,
+        "packets": 128773
+      },
+      "sender_mbps": 9.19194,
+      "ring_high_watermark": 12
+    },
+    {
+      "variant": "ring-cpp",
+      "repeat": 2,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 333,
+        "p50_ns": 4759,
+        "p99_ns": 20497,
+        "p99_9_ns": 108390,
+        "max_ns": 1114644,
+        "mean_ns": 5562.728974
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 522.790320952374,
+        "max_ns": 906629
+      },
+      "sender_mbps": 9.19581,
+      "ring_high_watermark": 8
+    },
+    {
+      "variant": "both-rust",
+      "repeat": 2,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 2123757,
+        "mean_ns": 5471.262807,
+        "min_ns": 341,
+        "p50_ns": 4505,
+        "p99_9_ns": 112380,
+        "p99_ns": 23652,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 2106857,
+        "mean_ns": 673.7994533015461,
+        "packets": 128773
+      },
+      "sender_mbps": 9.18929,
+      "ring_high_watermark": 13
+    },
+    {
+      "variant": "baseline-rust",
+      "repeat": 2,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 2544933,
+        "mean_ns": 5715.797537,
+        "min_ns": 333,
+        "p50_ns": 4495,
+        "p99_9_ns": 132410,
+        "p99_ns": 24101,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 2676036,
+        "mean_ns": 990.6175751127954,
+        "packets": 128773
+      },
+      "sender_mbps": 9.19099,
+      "ring_high_watermark": 26
+    },
+    {
+      "variant": "quantity-cpp",
+      "repeat": 2,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 299,
+        "p50_ns": 4723,
+        "p99_ns": 22662,
+        "p99_9_ns": 157745,
+        "max_ns": 494718,
+        "mean_ns": 5741.500928
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 758.767684219518,
+        "max_ns": 486407
+      },
+      "sender_mbps": 9.18687,
+      "ring_high_watermark": 50
+    },
+    {
+      "variant": "baseline-cpp",
+      "repeat": 2,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 308,
+        "p50_ns": 4842,
+        "p99_ns": 22919,
+        "p99_9_ns": 113759,
+        "max_ns": 385352,
+        "mean_ns": 5706.972191
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 593.907472839803,
+        "max_ns": 416227
+      },
+      "sender_mbps": 9.19168,
+      "ring_high_watermark": 17
+    },
+    {
+      "variant": "baseline-rust",
+      "repeat": 3,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 326973,
+        "mean_ns": 5392.901116,
+        "min_ns": 352,
+        "p50_ns": 4521,
+        "p99_9_ns": 113453,
+        "p99_ns": 23969,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 230613,
+        "mean_ns": 542.7107079900289,
+        "packets": 128773
+      },
+      "sender_mbps": 9.1909,
+      "ring_high_watermark": 14
+    },
+    {
+      "variant": "baseline-cpp",
+      "repeat": 3,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 325,
+        "p50_ns": 4756,
+        "p99_ns": 21327,
+        "p99_9_ns": 121202,
+        "max_ns": 483681,
+        "mean_ns": 5600.749177
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 563.604855055019,
+        "max_ns": 491166
+      },
+      "sender_mbps": 9.19359,
+      "ring_high_watermark": 19
+    },
+    {
+      "variant": "ring-rust",
+      "repeat": 3,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 4042113,
+        "mean_ns": 5825.965044,
+        "min_ns": 338,
+        "p50_ns": 4476,
+        "p99_9_ns": 147503,
+        "p99_ns": 26525,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 4028158,
+        "mean_ns": 1050.149146171946,
+        "packets": 128773
+      },
+      "sender_mbps": 9.19191,
+      "ring_high_watermark": 27
+    },
+    {
+      "variant": "quantity-rust",
+      "repeat": 3,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 442780,
+        "mean_ns": 5526.209834,
+        "min_ns": 332,
+        "p50_ns": 4513,
+        "p99_9_ns": 146493,
+        "p99_ns": 24452,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 415649,
+        "mean_ns": 761.1978908622149,
+        "packets": 128773
+      },
+      "sender_mbps": 9.19203,
+      "ring_high_watermark": 42
+    },
+    {
+      "variant": "both-rust",
+      "repeat": 3,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "max_ns": 381085,
+        "mean_ns": 5560.004618,
+        "min_ns": 349,
+        "p50_ns": 4498,
+        "p99_9_ns": 155079,
+        "p99_ns": 24961,
+        "samples": 1000000
+      },
+      "queue_wait": {
+        "max_ns": 335408,
+        "mean_ns": 809.0566656053676,
+        "packets": 128773
+      },
+      "sender_mbps": 9.19187,
+      "ring_high_watermark": 46
+    },
+    {
+      "variant": "ring-cpp",
+      "repeat": 3,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 331,
+        "p50_ns": 4754,
+        "p99_ns": 24133,
+        "p99_9_ns": 183762,
+        "max_ns": 3352893,
+        "mean_ns": 6343.809598
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 1294.96721362397,
+        "max_ns": 3325926
+      },
+      "sender_mbps": 9.18792,
+      "ring_high_watermark": 28
+    },
+    {
+      "variant": "quantity-cpp",
+      "repeat": 3,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 314,
+        "p50_ns": 4610,
+        "p99_ns": 20539,
+        "p99_9_ns": 112391,
+        "max_ns": 360447,
+        "mean_ns": 5404.926873
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 530.770798226336,
+        "max_ns": 437995
+      },
+      "sender_mbps": 9.1935,
+      "ring_high_watermark": 12
+    },
+    {
+      "variant": "both-cpp",
+      "repeat": 3,
+      "valid": true,
+      "checks": {
+        "processor_valid": true,
+        "timing": true,
+        "loss_free": true,
+        "warmup": true,
+        "counts": true,
+        "l2": true,
+        "l1": true,
+        "affinity": true,
+        "rate": true
+      },
+      "latency": {
+        "samples": 1000000,
+        "min_ns": 343,
+        "p50_ns": 4772,
+        "p99_ns": 23456,
+        "p99_9_ns": 122474,
+        "max_ns": 422400,
+        "mean_ns": 5697.487107
+      },
+      "queue_wait": {
+        "packets": 128773,
+        "mean_ns": 646.019390710786,
+        "max_ns": 410115
+      },
+      "sender_mbps": 9.19162,
+      "ring_high_watermark": 19
+    }
+  ]
+}

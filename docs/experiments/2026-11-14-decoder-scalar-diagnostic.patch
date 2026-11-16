@@ -1,0 +1,98 @@
+--- a/processors/cpp/src/pitch_message_packed.cpp
++++ b/processors/cpp/src/pitch_message_packed.cpp
+@@ -127,6 +127,86 @@
+     return wire;
+ }
+ 
++
++// DIAGNOSTIC ONLY: same named packed types and bounds; copy consumed members
++// separately so the compiler can keep scalars in registers, instead of copying
++// the entire wire prefix through a stack temporary.
++template<class T> T scalar_read(std::span<const std::uint8_t> bytes, std::size_t offset) {
++    T value;
++    std::memcpy(&value, bytes.data() + offset, sizeof(value));
++    return value;
++}
++template<> Time load<Time>(std::span<const std::uint8_t> bytes) {
++    if (bytes.size() < sizeof(Time)) { throw std::runtime_error("Truncated PITCH message fields"); }
++    Time wire{};
++    wire.seconds = scalar_read<decltype(wire.seconds)>(bytes, offsetof(Time, seconds));
++    return wire;
++}
++template<> TimeEpoch load<TimeEpoch>(std::span<const std::uint8_t> bytes) {
++    if (bytes.size() < sizeof(TimeEpoch)) { throw std::runtime_error("Truncated PITCH message fields"); }
++    TimeEpoch wire{};
++    wire.time.seconds = scalar_read<decltype(wire.time.seconds)>(bytes, offsetof(TimeEpoch, time) + offsetof(Time, seconds));
++    wire.epoch_seconds = scalar_read<decltype(wire.epoch_seconds)>(bytes, offsetof(TimeEpoch, epoch_seconds));
++    return wire;
++}
++template<> TimeReference load<TimeReference>(std::span<const std::uint8_t> bytes) {
++    if (bytes.size() < sizeof(TimeReference)) { throw std::runtime_error("Truncated PITCH message fields"); }
++    TimeReference wire{};
++    wire.midnight_reference = scalar_read<decltype(wire.midnight_reference)>(bytes, offsetof(TimeReference, midnight_reference));
++    wire.seconds = scalar_read<decltype(wire.seconds)>(bytes, offsetof(TimeReference, seconds));
++    wire.time_offset = scalar_read<decltype(wire.time_offset)>(bytes, offsetof(TimeReference, time_offset));
++    wire.trade_date = scalar_read<decltype(wire.trade_date)>(bytes, offsetof(TimeReference, trade_date));
++    return wire;
++}
++template<> ReduceLong load<ReduceLong>(std::span<const std::uint8_t> bytes) {
++    if (bytes.size() < sizeof(ReduceLong)) { throw std::runtime_error("Truncated PITCH message fields"); }
++    ReduceLong wire{};
++    wire.header.time_offset = scalar_read<decltype(wire.header.time_offset)>(bytes, offsetof(ReduceLong, header) + offsetof(Header, time_offset));
++    wire.order_id = scalar_read<decltype(wire.order_id)>(bytes, offsetof(ReduceLong, order_id));
++    wire.quantity = scalar_read<decltype(wire.quantity)>(bytes, offsetof(ReduceLong, quantity));
++    return wire;
++}
++template<> ModifyLong load<ModifyLong>(std::span<const std::uint8_t> bytes) {
++    if (bytes.size() < sizeof(ModifyLong)) { throw std::runtime_error("Truncated PITCH message fields"); }
++    ModifyLong wire{};
++    wire.header.time_offset = scalar_read<decltype(wire.header.time_offset)>(bytes, offsetof(ModifyLong, header) + offsetof(Header, time_offset));
++    wire.order_id = scalar_read<decltype(wire.order_id)>(bytes, offsetof(ModifyLong, order_id));
++    wire.quantity = scalar_read<decltype(wire.quantity)>(bytes, offsetof(ModifyLong, quantity));
++    wire.price = scalar_read<decltype(wire.price)>(bytes, offsetof(ModifyLong, price));
++    wire.flags = scalar_read<decltype(wire.flags)>(bytes, offsetof(ModifyLong, flags));
++    return wire;
++}
++template<> ModifyShort load<ModifyShort>(std::span<const std::uint8_t> bytes) {
++    if (bytes.size() < sizeof(ModifyShort)) { throw std::runtime_error("Truncated PITCH message fields"); }
++    ModifyShort wire{};
++    wire.header.time_offset = scalar_read<decltype(wire.header.time_offset)>(bytes, offsetof(ModifyShort, header) + offsetof(Header, time_offset));
++    wire.order_id = scalar_read<decltype(wire.order_id)>(bytes, offsetof(ModifyShort, order_id));
++    wire.quantity = scalar_read<decltype(wire.quantity)>(bytes, offsetof(ModifyShort, quantity));
++    wire.price = scalar_read<decltype(wire.price)>(bytes, offsetof(ModifyShort, price));
++    wire.flags = scalar_read<decltype(wire.flags)>(bytes, offsetof(ModifyShort, flags));
++    return wire;
++}
++template<> Executed load<Executed>(std::span<const std::uint8_t> bytes) {
++    if (bytes.size() < sizeof(Executed)) { throw std::runtime_error("Truncated PITCH message fields"); }
++    Executed wire{};
++    wire.header.time_offset = scalar_read<decltype(wire.header.time_offset)>(bytes, offsetof(Executed, header) + offsetof(Header, time_offset));
++    wire.order_id = scalar_read<decltype(wire.order_id)>(bytes, offsetof(Executed, order_id));
++    wire.quantity = scalar_read<decltype(wire.quantity)>(bytes, offsetof(Executed, quantity));
++    wire.execution_id = scalar_read<decltype(wire.execution_id)>(bytes, offsetof(Executed, execution_id));
++    return wire;
++}
++template<> ExecutedPrice load<ExecutedPrice>(std::span<const std::uint8_t> bytes) {
++    if (bytes.size() < sizeof(ExecutedPrice)) { throw std::runtime_error("Truncated PITCH message fields"); }
++    ExecutedPrice wire{};
++    wire.header.time_offset = scalar_read<decltype(wire.header.time_offset)>(bytes, offsetof(ExecutedPrice, header) + offsetof(Header, time_offset));
++    wire.order_id = scalar_read<decltype(wire.order_id)>(bytes, offsetof(ExecutedPrice, order_id));
++    wire.quantity = scalar_read<decltype(wire.quantity)>(bytes, offsetof(ExecutedPrice, quantity));
++    wire.remaining_quantity = scalar_read<decltype(wire.remaining_quantity)>(bytes, offsetof(ExecutedPrice, remaining_quantity));
++    wire.execution_id = scalar_read<decltype(wire.execution_id)>(bytes, offsetof(ExecutedPrice, execution_id));
++    wire.price = scalar_read<decltype(wire.price)>(bytes, offsetof(ExecutedPrice, price));
++    return wire;
++}
++
+ // Take packed integers by value, never bind an aligned reference to a member.
+ template<class T> T from_le(T value) {
+     static_assert(std::is_unsigned_v<T>);
+@@ -207,7 +287,7 @@
+ 
+ } // namespace
+ 
+-PitchMessage decode_pitch_message_packed(std::span<const std::uint8_t> bytes) {
++PitchMessage decode_pitch_message_packed_scalar(std::span<const std::uint8_t> bytes) {
+     if (bytes.size() < 2 || bytes[0] != bytes.size()) { throw std::runtime_error("Invalid PITCH message length"); }
+     PitchMessage m;
+     m.type = bytes[1];

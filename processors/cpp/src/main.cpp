@@ -1,6 +1,9 @@
 #include "cli.hpp"
 #include "low_latency/packet_ring.hpp"
 #include "low_latency/processor.hpp"
+#include "low_latency/recovery.hpp"
+#include "monitor.hpp"
+#include <poll.h>
 
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -37,11 +40,16 @@ struct Options {
     std::size_t ring_slots = 4096;
     std::size_t gap_slots = 4096;
     std::size_t max_live_orders = low_latency::OrderBook::default_max_orders;
+    std::size_t max_trades = low_latency::L1Book::default_max_trades;
     unsigned idle_ms = 3000;
     int receive_buffer = 4 * 1024 * 1024;
     low_latency::LossPolicy loss = low_latency::LossPolicy::stop;
     bool continuous = false;
+    std::uint16_t monitor_port = 0;
     std::string output;
+    low_latency::RecoveryOptions recovery;
+    std::string gap_group = "239.255.0.2";
+    std::uint16_t gap_port = 30002;
 };
 
 constexpr std::string_view help = R"(Usage: processor_cpp [options]
@@ -54,16 +62,25 @@ constexpr std::string_view help = R"(Usage: processor_cpp [options]
   --ring-slots N         Whole-packet SPSC ring capacity, power of two (4096)
   --gap-slots N          Reader-to-recovery gap queue capacity, power of two (4096)
   --max-live-orders N    Concurrent live order limit, 1..100000000 (1000000)
+  --max-trades N         Retained execution limit, 1..100000000 (1000000)
   --receive-buffer N     Requested OS socket buffer bytes (4194304)
   --idle-timeout-ms N    Stop on idle after first packet, 1..60000 (3000)
   --on-loss stop|continue  Stop/invalidate benchmark or continue with partial L2 (stop)
   --continuous           Run until interrupted; keep only the first N samples
+  --monitor-port N       Export L1/L2 to localhost UDP; requires --continuous
+  --grp IPv4:PORT        Enable GRP recovery (requires --continuous)
+  --spin-server IPv4:PORT  Optional per-unit spin fallback
+  --gap-group IPv4       Replay multicast group (239.255.0.2)
+  --gap-port N           Replay UDP port (30002)
+  --recovery-buffer N    Buffered message limit, 1..1000000 (65536)
+  --recovery-max-gap N   Prefer spin above this many messages (10000)
+  --recovery-timeout-ms N  GRP/spin deadline, 1..60000 (3000)
   --output PATH          Write JSON report; refuse to overwrite an existing file
   --help                 Show help
 
-Two threads: recvmsg -> timestamped packet ring -> PITCH/L2 updates.
+Two threads: recvmsg -> timestamped packet ring -> PITCH/L2 and L1 decisions.
 CLOCK_MONOTONIC timestamps RX immediately after successful recvmsg and the end
-of every sampled message's L2 update. Samples include ring wait and earlier
+of every sampled message's L1 emit/no-update decision. Samples include ring wait and earlier
 messages in that datagram. Controls are excluded. Waits indefinitely for startup.
 Continue mode drops whole packets on overflow; L2 stays incomplete until Unit
 Clear resets the book. Continuous mode normally accompanies --on-loss continue.
@@ -81,14 +98,26 @@ Options parse(int argc, char** argv) {
         if (name == "--group") { options.group = value; }
         else if (name == "--interface") { options.interface = value; }
         else if (name == "--port") { options.port = static_cast<std::uint16_t>(integer(name, value, 65535)); }
+        else if (name == "--monitor-port") {
+            options.monitor_port = static_cast<std::uint16_t>(integer(name, value, 65535));
+            if (!options.monitor_port) { throw std::invalid_argument("Need a nonzero --monitor-port"); }
+        }
         else if (name == "--unit") { options.unit = static_cast<std::uint8_t>(integer(name, value, 255)); }
         else if (name == "--messages") { options.samples = static_cast<std::size_t>(integer(name, value, 100'000'000)); }
         else if (name == "--warmup-messages") { options.warmup = integer(name, value, 100'000'000); }
         else if (name == "--ring-slots") { options.ring_slots = static_cast<std::size_t>(integer(name, value, 65536)); }
         else if (name == "--gap-slots") { options.gap_slots = static_cast<std::size_t>(integer(name, value, 65536)); }
         else if (name == "--max-live-orders") { options.max_live_orders = static_cast<std::size_t>(integer(name, value, low_latency::OrderBook::largest_order_limit)); }
+        else if (name == "--max-trades") { options.max_trades = static_cast<std::size_t>(integer(name, value, low_latency::OrderBook::largest_order_limit)); }
         else if (name == "--receive-buffer") { options.receive_buffer = static_cast<int>(integer(name, value, 256 * 1024 * 1024)); }
         else if (name == "--idle-timeout-ms") { options.idle_ms = static_cast<unsigned>(integer(name, value, 60000)); }
+        else if (name == "--grp") { options.recovery.grp = value; }
+        else if (name == "--spin-server") { options.recovery.spin_server = value; }
+        else if (name == "--gap-group") { options.gap_group = value; }
+        else if (name == "--gap-port") { options.gap_port = static_cast<std::uint16_t>(integer(name, value, 65535)); }
+        else if (name == "--recovery-buffer") { options.recovery.buffer_messages = static_cast<std::size_t>(integer(name, value, 1000000)); }
+        else if (name == "--recovery-max-gap") { options.recovery.max_gap = static_cast<std::uint32_t>(integer(name, value, 1000000)); }
+        else if (name == "--recovery-timeout-ms") { options.recovery.timeout_ns = integer(name, value, 60000) * 1000000; }
         else if (name == "--output") { options.output = value; }
         else if (name == "--on-loss") {
             if (value == "stop") { options.loss = low_latency::LossPolicy::stop; }
@@ -102,11 +131,19 @@ Options parse(int argc, char** argv) {
     if (interface_ip == INADDR_ANY || interface_ip == INADDR_BROADCAST || IN_MULTICAST(interface_ip)) {
         throw std::invalid_argument("Need a concrete unicast --interface address");
     }
-    if (options.unit == 0 || options.samples == 0 || options.max_live_orders == 0 || options.idle_ms == 0 || options.receive_buffer == 0 ||
+    if (options.unit == 0 || options.samples == 0 || options.max_live_orders == 0 || options.max_trades == 0 || options.idle_ms == 0 || options.receive_buffer == 0 ||
         options.ring_slots == 0 || (options.ring_slots & (options.ring_slots - 1)) != 0 ||
         options.gap_slots == 0 || (options.gap_slots & (options.gap_slots - 1)) != 0) {
         throw std::invalid_argument("Need nonzero unit/messages/timeout/buffer and power-of-two packet/gap queues");
     }
+    if ((!options.recovery.grp.empty() && (!options.continuous || !options.gap_port ||
+         !options.recovery.buffer_messages || !options.recovery.max_gap || !options.recovery.timeout_ns ||
+         !IN_MULTICAST(ntohl(address(options.gap_group).s_addr)) ||
+         (options.gap_group == options.group && options.gap_port == options.port))) ||
+        (options.recovery.grp.empty() && !options.recovery.spin_server.empty())) {
+        throw std::invalid_argument("Recovery needs --continuous, --grp, valid bounds and a distinct replay destination");
+    }
+    if (options.monitor_port && !options.continuous) { throw std::invalid_argument("Monitoring requires --continuous"); }
     if (!options.output.empty() && std::filesystem::exists(options.output)) {
         throw std::invalid_argument("Report already exists: " + options.output);
     }
@@ -165,6 +202,7 @@ public:
     ~Receiver() { close(fd_); }
     Receiver(const Receiver&) = delete;
     Receiver& operator=(const Receiver&) = delete;
+    int fd() const { return fd_; }
     std::uint16_t port() const { return port_; }
     int buffer() const { return buffer_; }
     bool drop_counter() const { return drop_counter_; }
@@ -229,7 +267,7 @@ struct QueueWait {
 std::string report(const Options& options, const low_latency::Processor& processor,
                    const RxStats& rx, const QueueWait& queue, int buffer, bool drop_counter,
                    std::uint64_t resolution, bool valid, const std::string& error,
-                   const std::vector<low_latency::GapRange>& gaps) {
+                   const std::vector<low_latency::GapRange>& gaps, const low_latency::Recovery* recovery) {
     const auto& stats = processor.stats();
     const auto latency = processor.latency();
     const auto book = processor.book().snapshot();
@@ -238,22 +276,25 @@ std::string report(const Options& options, const low_latency::Processor& process
         << "{\n  \"implementation\": \"cpp-os\",\n  \"compiler\": " << std::quoted(__VERSION__)
         << ",\n  \"build_type\": " << std::quoted(PROCESSOR_BUILD_TYPE)
         << ",\n  \"receive_api\": \"recvmsg\",\n  \"consumer_wait\": \"busy_spin\""
+        << ",\n  \"pitch_decoder\": \"packed-zero-copy\""
         << ",\n  \"order_container\": \"std::unordered_map\",\n  \"level_container\": \"std::map\""
         << ",\n  \"order_hash\": \"SipHash-2-4\""
         << ",\n  \"max_order_bucket_entries\": null"
         << ",\n  \"max_live_orders\": " << processor.book().max_orders()
-        << ",\n  \"threads\": 2,\n  \"continuous\": " << options.continuous
-        << ",\n  \"loss_policy\": " << std::quoted(options.loss == low_latency::LossPolicy::stop ? "stop" : "continue")
+        << ",\n  \"threads\": 2,\n  \"monitoring_enabled\": " << (options.monitor_port != 0)
+        << ",\n  \"continuous\": " << options.continuous
+        << ",\n  \"loss_policy\": " << std::quoted(recovery ? "recover" : options.loss == low_latency::LossPolicy::stop ? "stop" : "continue")
         << ",\n  \"benchmark_valid\": " << valid << ",\n  \"complete\": " << processor.complete()
         << ",\n  \"book_current\": " << (processor.book_current() && error.empty())
         << ",\n  \"error\": " << std::quoted(error)
         << ",\n  \"clock\": \"CLOCK_MONOTONIC\",\n  \"clock_resolution_ns\": " << resolution
-        << ",\n  \"timing_boundary\": \"recvmsg_return_to_message_l2_update\""
+        << ",\n  \"timing_boundary\": \"recvmsg_return_to_message_l1_decision\""
         << ",\n  \"group\": " << std::quoted(options.group) << ",\n  \"interface\": " << std::quoted(options.interface)
         << ",\n  \"unit\": " << unsigned{options.unit}
         << ",\n  \"target_samples\": " << options.samples << ",\n  \"warmup_target\": " << options.warmup
         << ",\n  \"warmup_messages\": " << stats.warmup_messages
         << ",\n  \"received_packets\": " << rx.packets << ",\n  \"processed_packets\": " << stats.packets
+        << ",\n  \"unsequenced_heartbeats\": " << stats.unsequenced_heartbeats
         << ",\n  \"other_unit_packets\": " << stats.other_unit_packets
         << ",\n  \"pitch_messages\": " << stats.pitch_messages << ",\n  \"market_messages\": " << stats.market_messages
         << ",\n  \"applied_market_messages\": " << stats.applied_market_messages
@@ -275,7 +316,7 @@ std::string report(const Options& options, const low_latency::Processor& process
         << ",\n  \"gap_ranges_dropped\": " << stats.gap_ranges_dropped
         << ",\n  \"queue_wait\": {\"packets\": " << queue.packets << ", \"mean_ns\": "
         << (queue.packets ? static_cast<double>(queue.sum / queue.packets) : 0)
-        << ", \"max_ns\": " << queue.maximum << "},\n  \"rx_to_l2\": {\"samples\": " << latency.samples;
+        << ", \"max_ns\": " << queue.maximum << "},\n  \"rx_to_l1_decision\": {\"samples\": " << latency.samples;
     const auto field = [&](const char* name, auto value) {
         out << ", \"" << name << "\": ";
         if (latency.samples) { out << value; } else { out << "null"; }
@@ -293,14 +334,75 @@ std::string report(const Options& options, const low_latency::Processor& process
             << "\", \"price_1e4\": " << level.price << ", \"quantity\": " << level.quantity
             << ", \"orders\": " << level.orders << '}' << (i + 1 == book.size() ? "\n" : ",\n");
     }
-    out << "  ],\n  \"pending_gap_ranges\": [\n";
+    out << "  ],\n  \"l1_decisions\": " << stats.l1_decisions
+        << ",\n  \"l1_updates\": " << stats.l1_updates << ",\n  \"l1_no_updates\": " << stats.l1_no_updates
+        << ",\n  \"max_retained_symbols\": " << processor.book().max_orders()
+        << ",\n  \"max_trades\": " << processor.l1().max_trades()
+        << ",\n  \"retained_trades\": " << processor.l1().trades()
+        << ",\n  \"trade_history_current\": " << processor.l1().trade_history_current()
+        << ",\n  \"session_ended\": " << processor.session_ended();
+    const auto write_time = [&](const char* name, const low_latency::PitchMessage& m) {
+        out << ",\n  " << std::quoted(name) << ": ";
+        if (m.type == 0) { out << "null"; return; }
+        out << "{\"seconds\": " << m.seconds << ", \"epoch_seconds\": " << m.epoch_seconds
+            << ", \"midnight_reference\": " << m.midnight_reference << ", \"trade_date\": " << m.trade_date
+            << ", \"time_offset_ns\": " << m.time_offset << '}';
+    };
+    write_time("feed_time", processor.time());
+    write_time("time_reference", processor.time_reference());
+    const auto write_quote = [&](const std::optional<low_latency::Quote>& quote) {
+        if (!quote) { out << "null"; return; }
+        out << "{\"price_1e4\": " << quote->price << ", \"quantity\": " << quote->quantity << '}';
+    };
+    const auto write_auction = [&](const std::optional<low_latency::PitchMessage>& m) {
+        if (!m) { out << "null"; return; }
+        out << "{\"auction_type\": \"" << m->auction_type << "\", \"price_1e4\": " << m->price
+            << ", \"quantity\": " << m->quantity << ", \"buy_quantity\": " << m->buy_quantity
+            << ", \"sell_quantity\": " << m->sell_quantity << ", \"indicative_price_1e4\": " << m->indicative_price
+            << ", \"auction_only_price_1e4\": " << m->auction_only_price << '}';
+    };
+    out << ",\n  \"final_l1\": [";
+    bool first = true;
+    for (const auto& [symbol, state] : processor.l1().symbols()) {
+        const auto& l1 = state.l1;
+        std::string name(symbol.begin(), symbol.end());
+        name.erase(name.find_last_not_of(' ') + 1);
+        if (!first) { out << ','; }
+        first = false;
+        out << "\n    {\"symbol\": " << std::quoted(name) << ", \"bid\": ";
+        write_quote(l1.bid);
+        out << ", \"ask\": "; write_quote(l1.ask);
+        out << ", \"last\": ";
+        if (l1.last) {
+            out << "{\"execution_id\": " << l1.last->execution_id << ", \"price_1e4\": " << l1.last->price
+                << ", \"quantity\": " << l1.last->quantity << ", \"trade_date\": " << l1.last->trade_date << '}';
+        } else { out << "null"; }
+        out << ", \"trading_status\": \"" << l1.trading_status << "\", \"reg_sho\": \"" << l1.reg_sho
+            << "\", \"retail\": \"" << l1.retail << "\", \"book_current\": " << (processor.book_current() && error.empty())
+            << ", \"trade_history_current\": " << l1.trade_history_current << ", \"auction_update\": ";
+        write_auction(state.auction_update);
+        out << ", \"auction_summary\": "; write_auction(state.auction_summary);
+        out << '}';
+    }
+    out << "\n  ],\n  \"pending_gap_ranges\": [\n";
     for (std::size_t i = 0; i < gaps.size(); ++i) {
         const auto& gap = gaps[i];
         out << "    {\"unit\": " << unsigned{gap.unit} << ", \"first_sequence\": " << gap.first_sequence
             << ", \"last_sequence\": " << gap.last_sequence << ", \"message_count\": " << gap.message_count
             << ", \"detected_rx_ns\": " << gap.detected_rx_ns << '}' << (i + 1 == gaps.size() ? "\n" : ",\n");
     }
-    out << "  ]\n}\n";
+    out << "  ]";
+    if (recovery) {
+        const auto& r = recovery->stats();
+        out << ",\n  \"recovery\": {\"active\": " << recovery->active()
+            << ", \"gaps\": " << r.gaps << ", \"requests\": " << r.requests
+            << ", \"rejections\": " << r.rejections << ", \"duplicates\": " << r.duplicates
+            << ", \"replay_messages\": " << r.replay_messages << ", \"spins\": " << r.spins
+            << ", \"buffered_high_watermark\": " << r.buffered_high_watermark
+            << ", \"timeouts\": " << r.timeouts << ", \"buffer_overflows\": " << r.buffer_overflows
+            << ", \"completed\": " << r.completed << ", \"total_ns\": " << r.total_ns << ", \"max_ns\": " << r.max_ns << '}';
+    }
+    out << "\n}\n";
     return out.str();
 }
 
@@ -312,9 +414,18 @@ int main(int argc, char** argv) {
         std::signal(SIGINT, stop);
         std::signal(SIGTERM, stop);
         low_latency::Processor processor(options.unit, options.warmup, options.samples, options.loss,
-                                          low_latency::monotonic_ns, options.gap_slots, options.max_live_orders);
+                                          low_latency::monotonic_ns, options.gap_slots, options.max_live_orders, options.max_trades);
         low_latency::PacketRing ring(options.ring_slots);
+        std::unique_ptr<low_latency::Monitor> monitor;
+        if (options.monitor_port) { monitor = std::make_unique<low_latency::Monitor>(options.monitor_port); }
         Receiver receiver(options);
+        std::unique_ptr<Receiver> replay_receiver;
+        std::unique_ptr<low_latency::Recovery> recovery;
+        if (!options.recovery.grp.empty()) {
+            auto replay_options = options; replay_options.group = options.gap_group; replay_options.port = options.gap_port;
+            replay_receiver = std::make_unique<Receiver>(replay_options);
+            recovery = std::make_unique<low_latency::Recovery>(options.recovery, options.unit);
+        }
         timespec clock_resolution{};
         if (clock_getres(CLOCK_MONOTONIC, &clock_resolution) != 0) {
             throw std::system_error(errno, std::generic_category(), "clock_getres");
@@ -329,7 +440,22 @@ int main(int argc, char** argv) {
                 while (!token.stop_requested() && !interrupted.load(std::memory_order_relaxed)) {
                     auto* slot = ring.producer_slot();
                     auto& destination = slot ? *slot : scratch;
-                    const auto status = receiver.receive(destination, rx);
+                    Receiver* source = &receiver;
+                    if (replay_receiver) {
+                        pollfd fds[2]{{receiver.fd(), POLLIN, 0}, {replay_receiver->fd(), POLLIN, 0}};
+                        const auto ready = poll(fds, 2, 50);
+                        if (ready < 0 && errno != EINTR) { throw std::system_error(errno, std::generic_category(), "poll multicast"); }
+                        if (ready <= 0) { continue; }
+                        if (fds[0].revents & (POLLERR|POLLNVAL) || fds[1].revents & (POLLERR|POLLNVAL)) {
+                            throw std::runtime_error("Multicast poll error");
+                        }
+                        // Alternate when both channels are ready to avoid starving replay.
+                        static bool prefer_replay = false;
+                        if ((fds[1].revents & POLLIN) && (!(fds[0].revents & POLLIN) || prefer_replay)) { source = replay_receiver.get(); }
+                        prefer_replay = !prefer_replay;
+                    }
+                    destination.replay = source == replay_receiver.get();
+                    const auto status = source->receive(destination, rx);
                     if (status == Receiver::Status::idle) {
                         if (token.stop_requested() || interrupted.load(std::memory_order_relaxed)) { break; }
                         if (!options.continuous && rx.packets &&
@@ -339,19 +465,19 @@ int main(int argc, char** argv) {
                         continue;
                     }
                     if (status == Receiver::Status::truncated) {
-                        if (options.loss == low_latency::LossPolicy::stop) {
+                        if (options.loss == low_latency::LossPolicy::stop && !recovery) {
                             throw std::runtime_error("UDP datagram exceeds the 1472-byte feed limit");
                         }
                         continue;
                     }
-                    if (rx.kernel_drops && options.loss == low_latency::LossPolicy::stop) {
+                    if (rx.kernel_drops && options.loss == low_latency::LossPolicy::stop && !recovery) {
                         throw std::runtime_error("Kernel socket queue reported packet loss");
                     }
                     if (!slot) {
                         slot = ring.producer_slot(); // Consumer may have freed space during recvmsg.
                         if (!slot) {
                             ++rx.ring_drops; // Drop the entire new datagram; never overwrite unread data.
-                            if (options.loss == low_latency::LossPolicy::stop) {
+                            if (options.loss == low_latency::LossPolicy::stop && !recovery) {
                                 throw std::runtime_error("Packet ring overflow");
                             }
                             continue;
@@ -371,6 +497,8 @@ int main(int argc, char** argv) {
         std::string error;
         try {
             while (!interrupted.load(std::memory_order_relaxed) && (options.continuous || !processor.complete())) {
+                if (recovery) { recovery->tick(processor, low_latency::monotonic_ns()); }
+                if (monitor) { monitor->heartbeat(processor); }
                 auto* packet = ring.consumer_slot();
                 if (!packet) {
                     if (finished.load(std::memory_order_acquire)) {
@@ -381,18 +509,28 @@ int main(int argc, char** argv) {
                 const auto dequeue = low_latency::monotonic_ns();
                 queue.record(dequeue - packet->rx_ns);
                 if (packet->dropped_before != observed_drops) {
-                    processor.note_loss();
+                    if (recovery) { recovery->note_loss(processor, dequeue); } else { processor.note_loss(); }
                     observed_drops = packet->dropped_before;
                 }
-                try { processor.process(packet->packet.data(), packet->rx_ns); }
+                try {
+                    if (recovery) { recovery->receive(processor, packet->packet.data(), packet->rx_ns, packet->replay); }
+                    else { processor.process(packet->packet.data(), packet->rx_ns); }
+                }
                 catch (...) { ring.release(); throw; }
                 ring.release();
+                if (monitor) { monitor->publish(processor); }
             }
         } catch (const std::exception& failure) { error = failure.what(); }
         producer.request_stop();
         producer.join();
-        if (observed_drops != rx.kernel_drops + rx.ring_drops + rx.truncated) { processor.note_loss(); }
+        if (observed_drops != rx.kernel_drops + rx.ring_drops + rx.truncated) {
+            if (recovery) { recovery->note_loss(processor, low_latency::monotonic_ns()); } else { processor.note_loss(); }
+        }
         if (error.empty()) { error = rx.error; }
+        if (monitor) {
+            monitor->publish(processor, !error.empty());
+            std::cerr << "Monitor UDP send drops: " << monitor->dropped() << '\n';
+        }
         const bool cancelled = interrupted.load(std::memory_order_relaxed);
         if (!options.continuous && cancelled && error.empty()) { error = "Interrupted before benchmark completion"; }
         const bool valid = !options.continuous && error.empty() && processor.complete() &&
@@ -402,7 +540,7 @@ int main(int argc, char** argv) {
         std::vector<low_latency::GapRange> gaps;
         low_latency::GapRange gap;
         while (processor.pop_gap(gap)) { gaps.push_back(gap); }
-        const auto json = report(options, processor, rx, queue, receiver.buffer(), receiver.drop_counter(), resolution, valid, error, gaps);
+        const auto json = report(options, processor, rx, queue, receiver.buffer(), receiver.drop_counter(), resolution, valid, error, gaps, recovery.get());
         if (!options.output.empty()) {
             std::ofstream file;
             file.exceptions(std::ios::badbit | std::ios::failbit);

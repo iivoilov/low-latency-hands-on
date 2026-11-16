@@ -1,0 +1,21 @@
+receiver_cpu,profile,build,attempts,valid_runs,invalid_runs,median_p50_ns,min_p50_ns,max_p50_ns,median_p99_ns,min_p99_ns,max_p99_ns,median_p99_9_ns,min_p99_9_ns,max_p99_9_ns,median_sender_mbps,all_valid_rates_within_5pct,comparison_scope
+EPYC 7742,P1,gcc-o2,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P1,gcc-o3,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P1,clang-o2,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P1,clang-o3,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P1,rust-o3,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P2,gcc-o2,3,3,0,1981,1970,2010,7311,7280,8870,95523,80442,251057,4.80039,True,unqualified_reverse_diagnostic
+EPYC 7742,P2,gcc-o3,3,2,1,1720.0,1720,1720,6395.0,6350,6440,194210.5,141264,247157,4.80039,True,unqualified_reverse_diagnostic
+EPYC 7742,P2,clang-o2,3,3,0,1610,1600,1629,6170,5950,6200,120313,86812,160105,4.80039,True,unqualified_reverse_diagnostic
+EPYC 7742,P2,clang-o3,3,3,0,1620,1620,1630,6101,6080,6230,159534,59662,178655,4.80039,True,unqualified_reverse_diagnostic
+EPYC 7742,P2,rust-o3,3,3,0,1740,1720,1790,5800,5670,7040,607518,457414,641689,4.80039,True,unqualified_reverse_diagnostic
+EPYC 7742,P3,gcc-o2,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P3,gcc-o3,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P3,clang-o2,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P3,clang-o3,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P3,rust-o3,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P4,gcc-o2,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P4,gcc-o3,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P4,clang-o2,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P4,clang-o3,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic
+EPYC 7742,P4,rust-o3,3,0,3,,,,,,,,,,,False,unqualified_reverse_diagnostic

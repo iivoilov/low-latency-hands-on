@@ -153,7 +153,10 @@ void test_generator() {
     rejects([] { low_latency::PitchGenerator invalid(1, 1, 1, {"A B"}); });
     rejects([] { low_latency::PitchGenerator invalid(1, 1, 1, {"A", "A"}); });
     rejects([] { low_latency::PitchGenerator invalid(1, 1, 1, {"A"}, 0); });
-    rejects([] { low_latency::PitchGenerator invalid(1, 1, 1, {"A"}, 100, 100); });
+    rejects([] { low_latency::PitchGenerator invalid(1, 1, 1, {"A", "B", "C", "D"}, 100, 100); });
+    rejects([] { low_latency::PitchGenerator invalid(1, 1, 1, {"A", "B"}, 10, 3, {100000}); });
+    rejects([] { low_latency::PitchGenerator invalid(1, 1, 1, {"A"}, 10, 3, {1000}); });
+    rejects([] { low_latency::PitchGenerator invalid(1, 1, 1, {"A"}, 10, 3, {UINT64_MAX}); });
     rejects([&] { generator.next(52'200'000'000'000ULL); });
     rejects([&] { generator.next(UINT64_MAX); });
 }

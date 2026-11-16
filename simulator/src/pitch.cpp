@@ -55,14 +55,28 @@ void validate_pitch(std::span<const std::uint8_t> payload) {
 
 PitchGenerator::PitchGenerator(std::uint64_t seed, std::uint8_t unit,
                                unsigned events_per_packet, std::vector<std::string> symbols,
-                               unsigned levels, unsigned orders_per_level)
+                               unsigned levels, unsigned orders_per_level,
+                               std::vector<std::uint64_t> reference_prices)
     : random_state_(seed), unit_(unit), events_per_packet_(events_per_packet),
-      symbols_(std::move(symbols)), levels_(levels) {
+      symbols_(std::move(symbols)), reference_prices_(std::move(reference_prices)), levels_(levels) {
     if (seed == 0 || unit == 0 || events_per_packet < 1 || events_per_packet > 40 ||
         symbols_.empty() || levels < 1 || levels > 100 ||
         orders_per_level < 1 || orders_per_level > 100 ||
-        symbols_.size() > 4096 / (2 * levels * orders_per_level)) {
-        throw std::invalid_argument("Need nonzero seed/unit, 1..40 events, 1..100 levels/orders, and <=4096 book orders");
+        symbols_.size() > 65536 / (2 * levels * orders_per_level)) {
+        throw std::invalid_argument("Need nonzero seed/unit, 1..40 events, 1..100 levels/orders, and <=65536 book orders");
+    }
+    if (reference_prices_.empty()) {
+        for (std::size_t i = 0; i < symbols_.size(); ++i) {
+            reference_prices_.push_back(1'000'000 + i * 100'000);
+        }
+    }
+    if (reference_prices_.size() != symbols_.size()) {
+        throw std::invalid_argument("Need one reference price per symbol");
+    }
+    for (const auto price : reference_prices_) {
+        if (price <= std::uint64_t{levels} * 100 || price > INT64_MAX - std::uint64_t{levels} * 100) {
+            throw std::invalid_argument("Reference prices must leave room for positive bid and signed 64-bit ask prices");
+        }
     }
     std::unordered_set<std::string> seen;
     for (const auto& symbol : symbols_) {
@@ -79,7 +93,7 @@ PitchGenerator::PitchGenerator(std::uint64_t seed, std::uint8_t unit,
         }
     }
     for (std::size_t symbol = 0; symbol < symbols_.size(); ++symbol) {
-        const auto mid = 1'000'000 + symbol * 100'000;
+        const auto mid = reference_prices_[symbol];
         for (const auto side : {'B', 'S'}) {
             for (unsigned level = 1; level <= levels; ++level) {
                 const auto ticks = std::uint64_t{level} * 100;
@@ -146,7 +160,7 @@ Packet PitchGenerator::next(std::uint64_t elapsed_ns, unsigned event_limit) {
             auto& order = orders_[index];
             const auto action = random() % 100;
             if (action < 30) {
-                const auto mid = 1'000'000 + order.symbol * 100'000;
+                const auto mid = reference_prices_[order.symbol];
                 const auto ticks = (random() % levels_ + 1) * 100;
                 order.price = order.side == 'B' ? mid - ticks : mid + ticks;
                 order.quantity = static_cast<std::uint32_t>((random() % 20 + 1) * 100);

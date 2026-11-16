@@ -27,7 +27,16 @@ No public ICE iMpact packet capture or complete message specification was verifi
 in this search. Obtain the applicable specification and samples through ICE
 integration support before implementing its encoder. ICE is not implemented.
 
-## Implemented subset
+## Processor coverage
+
+As of 2026-11-14, both C++ and Rust processors decode every U.S. equities
+multicast message in revision 2.41.87, build L2, maintain trade history and
+generate L1 bid/ask/last decisions. See the [coverage table and semantics](pitch-l1.md).
+Options-specific multicast messages remain outside this implementation. Optional
+Cboe GRP and spin services were added on 2026-11-15; see [recovery](recovery.md).
+The generator remains the deterministic subset described below.
+
+## Simulator subset
 
 The generator uses the BYX/EDGA Time variant. Encoded layouts:
 
@@ -54,13 +63,14 @@ with new IDs. Total state is bounded to 4096 slots. Prices, IDs, order flow, and
 byte-based traffic schedules are synthetic, not measured exchange behavior.
 A final heartbeat marks the end of the traffic budget.
 
-Periodic idle heartbeats, other order types, trading status, auctions, redundant
-feeds, spin servers, and recovery are absent. BZX/EDGX extended Time and Time Reference are not
-generated. Replay preserves any well-framed payload without decoding semantics.
+Other generated order types, trading status, auctions, and redundant feeds are
+absent. The separate `serve_feed` service adds recovery and post-file heartbeats.
+BZX/EDGX extended Time and Time Reference are not generated. Replay preserves any well-framed payload without decoding semantics.
 This is a laboratory subset, not a complete exchange emulator.
 
-TCP resend, GRP gap filling, and spin/snapshot recovery are explicitly outside
-this experiment's scope. Processor variants detect loss and can continue with
-explicit state-validity status; they do not repair missing input.
-The reader's separate missing-message-range queue is the handoff boundary to
-an independent recovery component. Gap detection is independent of loss origin.
+Default processors detect loss and either stop or continue with explicit
+state validity. Optional `--grp` recovery buffers later messages, requests
+missing ranges, and uses a configured spin service for snapshot fallback.
+`serve_feed` supplies the corresponding laboratory services from a complete PCAP.
+The baseline reader's gap notification queue remains available. See
+[recovery behavior, limits and verification](recovery.md).

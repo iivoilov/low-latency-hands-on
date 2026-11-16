@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PITCH / Market monitor</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="PITCH market monitor home"><span class="brand-icon">≋</span> PITCH<span class="brand-slash">/</span><span class="brand-sub">market monitor</span></a>
+    <div class="connection"><span id="connection-dot" class="dot"></span><span id="connection" role="status">Connecting</span><span class="divider"></span><time id="clock"></time></div>
+  </header>
+  <main>
+    <aside>
+      <div class="section-label">WORKSPACE <span>01</span></div>
+      <h2>Watchlist</h2>
+      <p class="muted">Choose securities to follow.</p>
+      <form id="watch-form">
+        <label for="symbols">L1 securities</label>
+        <div class="input-group"><input id="symbols" placeholder="AAPL, MSFT, TEST" autocomplete="off" spellcheck="false" aria-describedby="symbol-hint"><button type="submit" class="add-button" aria-label="Apply watchlist">↗</button></div>
+        <small id="symbol-hint">Comma separated · case sensitive</small>
+        <label for="interval">Update interval</label>
+        <select id="interval"><option value="100">100 ms</option><option value="250">250 ms</option><option value="500">500 ms</option><option value="1000" selected>1 second</option><option value="2000">2 seconds</option><option value="5000">5 seconds</option></select>
+        <label for="depth-symbol">L2 security</label>
+        <select id="depth-symbol"><option value="">No security selected</option></select>
+        <button type="submit" class="primary">Apply subscriptions <span>→</span></button>
+      </form>
+      <p id="form-error" class="error" role="alert"></p>
+      <div class="section-label available-label">AVAILABLE SECURITIES <span id="symbol-count">0</span></div>
+      <div id="available" class="available"><p class="muted">Waiting for processor data…</p></div>
+      <div class="side-note"><span class="dot green"></span><div>Snapshot, then live updates<p>Changes are combined per security. Unchanged prices stay quiet.</p></div></div>
+    </aside>
+    <section class="workspace">
+      <div class="page-heading"><div><div class="eyebrow">U.S. EQUITIES / LIVE BOOK</div><h1>Market overview<span class="accent">.</span></h1><p>Level one quotes and market depth, as they change.</p></div><div id="interval-badge" class="tag">1 s / security</div></div>
+      <div id="banner" class="banner" role="status">Waiting for a live processor. Start one with monitoring enabled.</div>
+      <div class="metrics">
+        <div class="metric"><span>SUBSCRIBED</span><strong id="watched-count">0</strong><small>L1 securities</small></div>
+        <div class="metric"><span>DELIVERED</span><strong id="event-count">0</strong><small>snapshots + updates</small></div>
+        <div class="metric"><span>FEED FRESHNESS</span><strong id="fresh-count">—</strong><small>securities reporting</small></div>
+        <div class="metric"><span>UDP FRAMES REJECTED</span><strong id="udp-count">—</strong><small>invalid + incomplete</small></div>
+      </div>
+      <section class="panel quotes-panel" aria-labelledby="quote-title">
+        <div class="panel-title"><h2 id="quote-title">Level 1 <span class="muted">/ quotes</span></h2><span class="section-label" id="last-delivery">AWAITING DATA</span></div>
+        <div class="table-scroll"><table class="quotes"><thead><tr><th>SECURITY</th><th>BID / SIZE</th><th>ASK / SIZE</th><th>SPREAD</th><th>LAST / SIZE</th><th>STATE</th></tr></thead><tbody id="quotes"><tr><td colspan="6" class="empty">Subscribe to a security to see its live quotes.</td></tr></tbody></table></div>
+      </section>
+      <section class="panel depth-panel" aria-labelledby="depth-title">
+        <div class="panel-title"><h2 id="depth-title">Market depth <span id="depth-name" class="muted">/ select a security</span></h2><span id="depth-state" class="tag">L2</span></div>
+        <div class="depth-summary"><div><span>BEST BID</span><strong id="best-bid" class="bid-text">—</strong></div><div class="spread-summary"><span>SPREAD</span><strong id="spread">—</strong></div><div class="ask-summary"><span>BEST ASK</span><strong id="best-ask" class="ask-text">—</strong></div></div>
+        <div class="depth-grid"><div><div class="depth-side"><span class="bid-text">BIDS</span><small id="bid-levels">0 levels</small></div><table class="depth bids"><thead><tr><th>ORDERS</th><th>QUANTITY</th><th>PRICE</th></tr></thead><tbody id="bids"></tbody></table></div><div><div class="depth-side"><span class="ask-text">ASKS</span><small id="ask-levels">0 levels</small></div><table class="depth asks"><thead><tr><th>PRICE</th><th>QUANTITY</th><th>ORDERS</th></tr></thead><tbody id="asks"></tbody></table></div></div>
+        <div id="depth-empty" class="empty">Choose an L2 security to inspect the book.</div>
+        <div class="depth-footer"><span id="depth-detail">Prices in USD · size in shares · up to 20 levels displayed</span><span>AGGREGATED L2</span></div>
+      </section>
+      <footer><span><span class="dot green"></span> Human-facing monitoring</span><span>Received prices · no latency measurement</span></footer>
+    </section>
+  </main>
+</body>
+</html>

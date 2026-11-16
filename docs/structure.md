@@ -14,7 +14,7 @@
 | `configs/` | Portable CPU defaults and anonymized experimental hardware |
 | `docs/experiments/` | Methods, all-attempt results, limits and JSON/CSV tables |
 | `analysis/` | Ignored runtime reports and raw timestamp captures |
-| `CMakeLists.txt` | C++ build and six CTest cases |
+| `CMakeLists.txt` | C++ build and 15 CTest cases |
 
 ## Runtime path
 
@@ -26,10 +26,12 @@ UDP socket → RX thread → bounded whole-packet SPSC ring → L2 thread
 ```
 
 The RX thread receives into a free packet slot; a full ring causes a new whole
-packet to be dropped without overwriting unread data. The L2 thread owns order
-and price-level state. Its reader detects bounded sequence gaps independent of
+packet to be dropped without overwriting unread data. The L2 thread owns order,
+price-level, trade and L1 state. Its reader detects bounded sequence gaps independent of
 loss origin and publishes missing-message ranges to a separate queue. A recovery
-consumer can use that handoff; no recovery worker or resend service is included.
+consumer can use that handoff; optional recovery resequences before the same consumer-owned book.
+See [GRP/spin recovery](recovery.md); `serve_feed` supplies indexed replay and
+checkpoint-based spin images outside its pacing thread.
 
 Benchmark mode stops on loss and marks incomplete runs invalid. Continuous mode
 can keep applying later input while recording loss and marking state incomplete.
@@ -40,3 +42,5 @@ L2 processor. See [timestamp usage](usage.md#hardware-receive-timestamps) and
 [the measured experiment](experiments/2026-11-12-hardware-rx.md).
 
 Start with [usage](usage.md), then read the [experiment index](experiments/README.md).
+
+`monitoring/` contains optional throttler, Valkey/WebSocket bridge and browser UI.

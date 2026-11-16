@@ -22,9 +22,11 @@ struct Ring<T> {
 unsafe impl<T: Send> Sync for Ring<T> {}
 pub struct Producer<T> {
     ring: Arc<Ring<T>>,
+    cached_read: usize,
 }
 pub struct Consumer<T> {
     ring: Arc<Ring<T>>,
+    cached_write: usize,
 }
 pub struct WriteGuard<'a, T> {
     ring: &'a Ring<T>,
@@ -49,13 +51,23 @@ pub fn channel<T: Default + Send>(capacity: usize) -> Result<(Producer<T>, Consu
         write: Index(AtomicUsize::new(0)),
         read: Index(AtomicUsize::new(0)),
     });
-    Ok((Producer { ring: ring.clone() }, Consumer { ring }))
+    Ok((
+        Producer {
+            ring: ring.clone(),
+            cached_read: 0,
+        },
+        Consumer { ring, cached_write: 0 },
+    ))
 }
 impl<T> Producer<T> {
     pub fn reserve(&mut self) -> Option<WriteGuard<'_, T>> {
         let index = self.ring.write.0.load(Ordering::Relaxed);
-        if index.wrapping_sub(self.ring.read.0.load(Ordering::Acquire)) == self.ring.slots.len() {
-            return None;
+        // Only refresh the other endpoint's position when apparently full.
+        if index.wrapping_sub(self.cached_read) == self.ring.slots.len() {
+            self.cached_read = self.ring.read.0.load(Ordering::Acquire);
+            if index.wrapping_sub(self.cached_read) == self.ring.slots.len() {
+                return None;
+            }
         }
         Some(WriteGuard {
             ring: &self.ring,
@@ -76,8 +88,12 @@ impl<T> Producer<T> {
 impl<T> Consumer<T> {
     pub fn read(&mut self) -> Option<ReadGuard<'_, T>> {
         let index = self.ring.read.0.load(Ordering::Relaxed);
-        if index == self.ring.write.0.load(Ordering::Acquire) {
-            return None;
+        // A cached publication authorizes every slot before that position.
+        if index == self.cached_write {
+            self.cached_write = self.ring.write.0.load(Ordering::Acquire);
+            if index == self.cached_write {
+                return None;
+            }
         }
         Some(ReadGuard {
             ring: &self.ring,
@@ -86,7 +102,8 @@ impl<T> Consumer<T> {
         })
     }
     pub fn is_empty(&self) -> bool {
-        self.ring.read.0.load(Ordering::Relaxed) == self.ring.write.0.load(Ordering::Acquire)
+        let index = self.ring.read.0.load(Ordering::Relaxed);
+        index == self.cached_write && index == self.ring.write.0.load(Ordering::Acquire)
     }
     pub fn try_pop(&mut self) -> Option<T>
     where
@@ -111,6 +128,7 @@ impl<T> DerefMut for WriteGuard<'_, T> {
 impl<T> WriteGuard<'_, T> {
     pub fn commit(self) -> usize {
         let next = self.index.wrapping_add(1);
+        // Preserve the depth observation instead of reporting a stale upper bound.
         let depth = next.wrapping_sub(self.ring.read.0.load(Ordering::Acquire));
         self.ring.write.0.store(next, Ordering::Release);
         depth

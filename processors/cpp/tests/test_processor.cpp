@@ -18,6 +18,14 @@ template<class Function> void rejects(Function function) {
 }
 
 using Bytes = std::vector<std::uint8_t>;
+
+// Own fixture bytes while the processor establishes packed object lifetimes.
+void process_packet(low_latency::Processor& processor, Bytes payload, std::uint64_t rx_ns) {
+    const auto before = payload;
+    processor.process(payload, rx_ns);
+    if (payload != before) { throw std::runtime_error("Processing changed packet bytes"); }
+}
+
 constexpr std::size_t test_max_orders = 4096;
 void put(Bytes& bytes, std::size_t offset, std::uint64_t value, unsigned width) {
     for (unsigned i = 0; i < width; ++i) { bytes.at(offset + i) = static_cast<std::uint8_t>(value >> (8 * i)); }
@@ -99,23 +107,23 @@ void test_book() {
 void test_timing() {
     ticks = 0;
     low_latency::Processor processor(1, 1, 1000, low_latency::LossPolicy::stop, clock_tick);
-    processor.process(datagram(1, {control(0x20), control(0x97), event(0x21, 1)}), 0);
+    process_packet(processor, datagram(1, {control(0x20), control(0x97), event(0x21, 1)}), 0);
     check(ticks == 0 && processor.stats().warmup_messages == 1, "Controls and warmup must not be sampled");
     std::uint32_t sequence = 4;
     for (unsigned packet = 0; packet < 25; ++packet) {
         std::vector<Bytes> messages;
         for (unsigned i = 0; i < 40; ++i) { messages.push_back(event(0x21, 2 + packet * 40 + i)); }
-        processor.process(datagram(sequence, messages), 0);
+        process_packet(processor, datagram(sequence, messages), 0);
         sequence += 40;
     }
     const auto summary = processor.latency();
     check(processor.complete() && processor.book_current(), "Valid sample target should complete");
     check(summary.samples == 1000 && summary.minimum == 1 && summary.p50 == 500 && summary.p99 == 990 &&
           summary.p999 == 999 && summary.maximum == 1000, "Wrong RX endpoints or nearest-rank percentiles");
-    processor.process(datagram(sequence, {event(0x21, 2000)}), 0);
+    process_packet(processor, datagram(sequence, {event(0x21, 2000)}), 0);
     check(processor.latency().samples == 1000 && ticks == 1000, "Sample storage must stay bounded");
     low_latency::Processor other(1, 0, 1);
-    other.process(datagram(1, {event(0x21, 1)}, 2), 0);
+    process_packet(other, datagram(1, {event(0x21, 1)}, 2), 0);
     check(other.stats().other_unit_packets == 1 && other.book().orders() == 0, "Other units must be isolated");
 }
 
@@ -141,12 +149,12 @@ void test_book_bounds() {
         check(book.orders() == 0 && book.symbols() == 0, "Order churn must not retain empty symbols");
     }
     low_latency::Processor dirty(1, 0, 1, low_latency::LossPolicy::continue_processing, low_latency::monotonic_ns, 4096, test_max_orders);
-    dirty.process(datagram(1, {control(0x97)}), 0);
+    process_packet(dirty, datagram(1, {control(0x97)}), 0);
     for (std::uint32_t i = 0; i < test_max_orders; ++i) {
-        dirty.process(datagram(i + 2, {event(0x21, i + 1)}), 0);
+        process_packet(dirty, datagram(i + 2, {event(0x21, i + 1)}), 0);
     }
     dirty.note_loss();
-    rejects([&] { dirty.process(datagram(4098, {event(0x21, 99999)}), 0); });
+    rejects([&] { process_packet(dirty, datagram(4098, {event(0x21, 99999)}), 0); });
     check(dirty.stats().protocol_errors == 1 && dirty.stats().skipped_market_messages == 0 &&
           dirty.book().orders() == test_max_orders, "Limits must remain fatal after loss");
 }
@@ -217,10 +225,10 @@ void test_order_hash_collisions() {
     low_latency::Processor dirty(1, 0, 1, low_latency::LossPolicy::continue_processing,
                                  low_latency::monotonic_ns, 4096, 256);
     const auto random_ids = colliders_for(dirty.book());
-    dirty.process(datagram(1, {control(0x97)}), 0);
+    process_packet(dirty, datagram(1, {control(0x97)}), 0);
     dirty.note_loss();
     for (std::uint32_t i = 0; i < random_ids.size(); ++i) {
-        dirty.process(datagram(i + 2, {event(0x21, random_ids[i])}), 0);
+        process_packet(dirty, datagram(i + 2, {event(0x21, random_ids[i])}), 0);
     }
     check(dirty.book().orders() == colliding_orders && dirty.stats().protocol_errors == 0 &&
           dirty.stats().skipped_market_messages == 0 && !dirty.book_current(),
@@ -267,22 +275,22 @@ void test_malformed_after_loss() {
     }
     for (const auto& message : invalid) {
         low_latency::Processor dirty(1, 0, 1, low_latency::LossPolicy::continue_processing);
-        dirty.process(datagram(1, {control(0x97), event(0x21, 1)}), 0);
-        rejects([&] { dirty.process(datagram(4, {message}), 0); }); // Forward gap dirties the book first.
+        process_packet(dirty, datagram(1, {control(0x97), event(0x21, 1)}), 0);
+        rejects([&] { process_packet(dirty, datagram(4, {message}), 0); }); // Forward gap dirties the book first.
         check(dirty.stats().protocol_errors == 1 && dirty.stats().skipped_market_messages == 0 &&
               !dirty.book_current(), "Malformed market fields must remain fatal after loss");
     }
     low_latency::Processor partial(1, 0, 1, low_latency::LossPolicy::continue_processing);
-    partial.process(datagram(1, {control(0x97), event(0x21, 1)}), 0);
-    partial.process(datagram(4, {event(0x25, 1, 101), event(0x25, 99, 1), event(0x25, 1, 1)}), 0);
+    process_packet(partial, datagram(1, {control(0x97), event(0x21, 1)}), 0);
+    process_packet(partial, datagram(4, {event(0x25, 1, 101), event(0x25, 99, 1), event(0x25, 1, 1)}), 0);
     check(partial.stats().skipped_market_messages == 2 && partial.book().snapshot()[0].quantity == 99,
           "Partial mode must still skip missing references/overdraws and apply valid updates");
 }
 
 void test_loss() {
     low_latency::Processor strict(1, 0, 10);
-    strict.process(datagram(1, {control(0x97), event(0x21, 1, 10)}), low_latency::monotonic_ns());
-    rejects([&] { strict.process(datagram(4, {event(0x25, 1, 1)}), 0); });
+    process_packet(strict, datagram(1, {control(0x97), event(0x21, 1, 10)}), low_latency::monotonic_ns());
+    rejects([&] { process_packet(strict, datagram(4, {event(0x25, 1, 1)}), 0); });
     check(strict.stats().missing_messages == 1 && !strict.book_current(), "Gap must invalidate a benchmark");
     check(strict.book().snapshot()[0].quantity == 10, "Gap packet must not be applied in stop mode");
     low_latency::GapRange gap;
@@ -290,34 +298,34 @@ void test_loss() {
           "Strict mode must queue the missing range before stopping");
 
     low_latency::Processor live(1, 0, 20, low_latency::LossPolicy::continue_processing);
-    live.process(datagram(1, {control(0x97), event(0x21, 1, 10)}), 0);
-    live.process(datagram(4, {event(0x25, 99, 1)}), 0); // Lost Add for order 99.
+    process_packet(live, datagram(1, {control(0x97), event(0x21, 1, 10)}), 0);
+    process_packet(live, datagram(4, {event(0x25, 99, 1)}), 0); // Lost Add for order 99.
     check(!live.book_current() && live.stats().skipped_market_messages == 1, "Missing-order update must be skipped in partial mode");
-    live.process(datagram(5, {event(0x25, 1, 1)}), 0);
-    live.process(datagram(5, {event(0x25, 1, 1)}), 0); // Duplicate packet.
+    process_packet(live, datagram(5, {event(0x25, 1, 1)}), 0);
+    process_packet(live, datagram(5, {event(0x25, 1, 1)}), 0); // Duplicate packet.
     check(live.book().snapshot()[0].quantity == 9 && live.stats().out_of_order_packets == 1,
           "Duplicate packet must not be applied twice");
-    live.process(datagram(6, {control(0x97), event(0x21, 100, 50, 101000, 'S')}), 0);
+    process_packet(live, datagram(6, {control(0x97), event(0x21, 100, 50, 101000, 'S')}), 0);
     check(live.book_current() && live.loss_seen() && live.book().orders() == 1,
           "Unit Clear must restore current state while preserving loss history");
     live.note_loss(); // RX-ring/kernel loss preceding the next queued datagram.
     check(!live.book_current(), "External packet loss must invalidate the book");
-    live.process(datagram(8, {control(0x97)}), 0);
+    process_packet(live, datagram(8, {control(0x97)}), 0);
     check(live.book_current() && live.book().snapshot().empty(), "Reset must recover from external loss");
     check(live.pop_gap(gap) && gap == low_latency::GapRange{1, 3, 3, 1, 0} && !live.pop_gap(gap),
           "Reader must queue the gap once, independent of RX diagnostics, duplicates, and resets");
     for (const auto sequence : {50U, 3'000'000'000U}) {
         low_latency::Processor joined(1, 0, 10, low_latency::LossPolicy::continue_processing);
-        joined.process(datagram(sequence, {event(0x21, 5)}), 0);
+        process_packet(joined, datagram(sequence, {event(0x21, 5)}), 0);
         check(!joined.book_current() && joined.book().orders() == 1 && joined.stats().joined_midstream &&
               joined.stats().missing_messages == 0, "Mid-session join must accept either half of sequence space without inventing loss counts");
         check(!joined.pop_gap(gap), "Unknown startup prefix must not invent a bounded gap");
     }
     low_latency::Processor malformed(1, 0, 1);
-    rejects([&] { malformed.process(Bytes{8, 0, 1, 1, 1, 0, 0, 0}, 0); });
+    rejects([&] { process_packet(malformed, Bytes{8, 0, 1, 1, 1, 0, 0, 0}, 0); });
     check(malformed.stats().protocol_errors == 1 && !malformed.book_current(), "Bad framing must invalidate state");
     low_latency::Processor unknown(1, 0, 1);
-    rejects([&] { unknown.process(datagram(1, {Bytes{2, 0xff}}), 0); });
+    rejects([&] { process_packet(unknown, datagram(1, {Bytes{2, 0xff}}), 0); });
     check(!unknown.book_current(), "Unknown book semantics must not be reported as current");
 }
 
@@ -335,26 +343,26 @@ void test_gap_queue() {
 
     low_latency::Processor overflow(3, 0, 10, low_latency::LossPolicy::continue_processing,
                                     low_latency::monotonic_ns, 1);
-    overflow.process(datagram(1, {control(0x97)}, 3), 0);
-    overflow.process(datagram(4, {event(0x21, 1)}, 3), 100);
-    overflow.process(datagram(7, {event(0x21, 2)}, 3), 200);
+    process_packet(overflow, datagram(1, {control(0x97)}, 3), 0);
+    process_packet(overflow, datagram(4, {event(0x21, 1)}, 3), 100);
+    process_packet(overflow, datagram(7, {event(0x21, 2)}, 3), 200);
     check(overflow.stats().gap_ranges_enqueued == 1 && overflow.stats().gap_ranges_dropped == 1 &&
           overflow.book().orders() == 2, "Full gap queue must count the dropped notification and keep processing input");
     check(overflow.pop_gap(gap) && gap == low_latency::GapRange{3, 2, 3, 2, 100}, "Notification overflow overwrote the first gap");
-    overflow.process(datagram(10, {event(0x21, 3)}, 3), 300);
+    process_packet(overflow, datagram(10, {event(0x21, 3)}, 3), 300);
     check(overflow.pop_gap(gap) && gap == low_latency::GapRange{3, 8, 9, 2, 300} &&
           overflow.stats().missing_messages == 6, "Reader must resume enqueuing when space becomes available");
 
     low_latency::Processor wrap(1, 0, 10, low_latency::LossPolicy::continue_processing);
-    wrap.process(datagram(UINT32_MAX - 2, {control(0x97)}), 0);
-    wrap.process(datagram(2, {event(0x21, 1)}), 100);
+    process_packet(wrap, datagram(UINT32_MAX - 2, {control(0x97)}), 0);
+    process_packet(wrap, datagram(2, {event(0x21, 1)}), 100);
     check(wrap.pop_gap(gap) && gap == low_latency::GapRange{1, UINT32_MAX - 1, 1, 3, 100},
           "Wrapped gap must skip sequence zero and retain exact bounds/count");
 
     low_latency::Processor heartbeat(1, 0, 1, low_latency::LossPolicy::continue_processing);
-    heartbeat.process(datagram(1, {control(0x97)}), 0);
-    heartbeat.process(datagram(5, {}), 100);
-    heartbeat.process(datagram(5, {}), 200);
+    process_packet(heartbeat, datagram(1, {control(0x97)}), 0);
+    process_packet(heartbeat, datagram(5, {}), 100);
+    process_packet(heartbeat, datagram(5, {}), 200);
     check(heartbeat.pop_gap(gap) && gap == low_latency::GapRange{1, 2, 4, 3, 100} &&
           !heartbeat.pop_gap(gap), "Heartbeat must expose a gap without duplicating its notification");
 
@@ -381,7 +389,7 @@ void test_workload() {
     const auto generate = [&](std::uint64_t messages) {
         while (messages) {
             const auto events = static_cast<unsigned>(std::min<std::uint64_t>(messages, 8));
-            const auto packet = generator.next(packet_index++ * 100000, events);
+            auto packet = generator.next(packet_index++ * 100000, events);
             processor.process(packet.data(), low_latency::monotonic_ns());
             messages -= events;
         }
@@ -413,6 +421,33 @@ void test_ring() {
     ring.release();
     check(ring.consumer_slot() == nullptr, "Empty ring must refuse reads");
     rejects([] { low_latency::PacketRing invalid(3); });
+
+    // Alternate bursts and partial drains so both cached positions become stale.
+    low_latency::PacketRing bursts(4);
+    for (std::uint64_t round = 0; round < 1000; ++round) {
+        for (std::uint64_t i = 0; i < 3; ++i) {
+            bursts.producer_slot()->rx_ns = round * 4 + i;
+            check(bursts.publish() == i + 1, "Wrong depth during burst publication");
+        }
+        check(bursts.consumer_slot()->rx_ns == round * 4, "Burst FIFO changed");
+        bursts.release();
+        bursts.producer_slot()->rx_ns = round * 4 + 3;
+        check(bursts.publish() == 3, "Depth must observe a release despite a stale cached read");
+        for (std::uint64_t i = 1; i < 4; ++i) {
+            check(bursts.consumer_slot()->rx_ns == round * 4 + i, "Cached publication lost a packet");
+            bursts.release();
+        }
+        check(bursts.consumer_slot() == nullptr, "Cached positions must refresh at empty");
+        for (unsigned i = 0; i < 4; ++i) {
+            check(bursts.producer_slot() != nullptr, "Cached read must refresh at apparent full");
+            bursts.publish();
+        }
+        check(bursts.producer_slot() == nullptr, "A full cached ring must refuse writes");
+        for (unsigned i = 0; i < 4; ++i) {
+            check(bursts.consumer_slot() != nullptr, "A full burst must be readable");
+            bursts.release();
+        }
+    }
 
     low_latency::PacketRing threaded(64);
     constexpr std::uint64_t count = 100000;

@@ -24,7 +24,9 @@ def cli(directory):
                  ['--group', '127.0.0.1'], ['--unknown', 'x'],
                  ['--interface', '0.0.0.0'], ['--interface', '239.255.0.1'],
                  ['--interface', '255.255.255.255'], ['--max-live-orders', 0],
-                 ['--max-live-orders', 100000001]):
+                 ['--max-live-orders', 100000001], ['--max-trades', 0], ['--max-trades', 100000001],
+                 ['--monitor-port', 8765], ['--monitor-port', 0, '--continuous'],
+                 ['--monitor-port', 65536, '--continuous']):
         result = subprocess.run([PROCESSOR, *map(str, args)], capture_output=True, text=True, timeout=3)
         assert result.returncode != 0, (args, result.stdout, result.stderr)
     existing = directory / 'existing.json'
@@ -54,6 +56,8 @@ def finish(process, report, *, success):
     assert (process.returncode == 0) == success, (process.returncode, stdout, stderr)
     data = json.loads(report.read_text())
     assert data['threads'] == 2 and data['clock'] == 'CLOCK_MONOTONIC'
+    assert data['timing_boundary'] == 'recvmsg_return_to_message_l1_decision'
+    assert 'rx_to_l2' not in data
     return data, stdout, stderr
 
 
@@ -110,6 +114,7 @@ def filtered_traffic(directory):
             assert result['benchmark_valid'] and result['book_current']
             assert result['max_live_orders'] == 1000000
             if result['implementation'] == 'cpp-os':
+                assert result['pitch_decoder'] == 'packed-zero-copy'
                 assert result['order_container'] == 'std::unordered_map'
                 assert result['order_hash'] == 'SipHash-2-4'
                 assert result['max_order_bucket_entries'] is None
@@ -166,7 +171,7 @@ def full_stream(directory):
         assert replay.returncode == 0, (replay.stdout, replay.stderr)
         result, _, _ = finish(process, report, success=True)
         assert result['benchmark_valid'] and result['book_current'] and result['complete']
-        assert result['rx_to_l2']['samples'] == manifest['updates'] == 100000
+        assert result['rx_to_l1_decision']['samples'] == manifest['updates'] == 100000
         assert result['warmup_messages'] == manifest['initialization_messages'] == 180
         assert result['market_messages'] == result['applied_market_messages'] == manifest['market_messages']
         assert result['pitch_messages'] == manifest['pitch_messages']
@@ -177,7 +182,7 @@ def full_stream(directory):
                       'gap_ranges_enqueued', 'gap_ranges_dropped'):
             assert result[field] == 0, (field, result)
         assert result['pending_gap_ranges'] == []
-        latency = result['rx_to_l2']
+        latency = result['rx_to_l1_decision']
         assert 0 <= latency['min_ns'] <= latency['p50_ns'] <= latency['p99_ns'] <= latency['p99_9_ns'] <= latency['max_ns']
         assert result['queue_wait']['packets'] == result['processed_packets']
         assert 0 < result['ring_high_watermark'] <= result['ring_slots']
@@ -218,7 +223,7 @@ def loss_cases(directory):
                 assert (gap['unit'], gap['first_sequence'], gap['last_sequence'], gap['message_count']) == (1, 3, 3, 1)
                 assert gap['detected_rx_ns'] > 0
             if name == 'strict-gap':
-                assert result['rx_to_l2']['samples'] == 1 and not result['book_current']
+                assert result['rx_to_l1_decision']['samples'] == 1 and not result['book_current']
             elif name == 'continue-gap':
                 assert result['complete'] and not result['book_current']
                 assert result['skipped_market_messages'] == 1 and result['error'] == ''
@@ -235,7 +240,7 @@ def loss_cases(directory):
                 assert result['pending_gap_ranges'][0]['first_sequence'] == 3
             elif name == 'truncated':
                 assert result['truncated_packets'] == 1 and not result['book_current']
-                assert result['rx_to_l2']['p50_ns'] is None
+                assert result['rx_to_l1_decision']['p50_ns'] is None
             elif name == 'continue-truncated':
                 assert result['truncated_packets'] == 1 and result['complete'] and result['book_current']
             elif name == 'malformed':
@@ -244,6 +249,66 @@ def loss_cases(directory):
                 assert not result['complete'] and 'idle timeout' in result['error']
         finally:
             cleanup(process)
+
+
+def all_equities_messages(directory):
+    fixture_path = pathlib.Path(__file__).resolve().parents[2] / 'tests/equities_messages.tsv'
+    fixtures = {parts[0]: bytearray.fromhex(parts[1])
+                for line in fixture_path.read_text().splitlines() if line and not line.startswith('#')
+                for parts in [line.split()]}
+
+    def encoded(name, *, order=None, execution=None, side=None):
+        m = fixtures[name].copy()
+        if order is not None:
+            struct.pack_into('<Q', m, 6, order)
+        if execution is not None:
+            offset = {'trade_long': 33, 'trade_short': 25, 'trade_expanded': 35,
+                      'execute': 18, 'execute_price': 22, 'trade_break': 6}[name]
+            struct.pack_into('<Q', m, offset, execution)
+        if side is not None:
+            m[14] = ord(side)
+        return m
+
+    messages = [encoded('time_reference'), encoded('time'), encoded('time_epoch'), encoded('unit_clear'),
+                encoded('add_long', order=1), encoded('add_short', order=2, side='S'),
+                encoded('add_expanded', order=3), encoded('reduce_long', order=1),
+                encoded('reduce_short', order=2), encoded('modify_long', order=1),
+                encoded('modify_short', order=2), encoded('execute', order=1, execution=100),
+                encoded('execute_price', order=2, execution=101),
+                encoded('trade_long', execution=102), encoded('trade_short', execution=103),
+                encoded('trade_expanded', execution=104), encoded('trade_break', execution=102),
+                encoded('trade_break', execution=103), encoded('status'), encoded('auction_update'),
+                encoded('auction_summary'), encoded('retail'), encoded('delete', order=1),
+                encoded('delete', order=2), encoded('delete', order=3), encoded('end_session')]
+    # All symbol/order/trade messages, including unchanged auction metadata,
+    # have a decision sample. Clock/reset/session controls are excluded.
+    samples = len(messages) - 5
+    report = directory / 'all-equities.json'
+    process, port = start(report, '--warmup-messages', 0, '--messages', samples, '--max-trades', 8)
+    try:
+        send(port, [packet(0), packet(1, *messages)])
+        result, _, _ = finish(process, report, success=True)
+        assert result['benchmark_valid'] and result['session_ended']
+        assert result['unsequenced_heartbeats'] == 1 and result['sequence_errors'] == 0
+        assert result['rx_to_l1_decision']['samples'] == samples
+        assert result['l1_decisions'] == samples
+        assert result['l1_no_updates'] > 0 and result['l1_updates'] > 0
+        assert result['retained_trades'] == 3 and result['final_book'] == []
+        assert result['feed_time']['epoch_seconds'] == 1700000000
+        assert result['time_reference']['trade_date'] == 20261114
+        states = {s['symbol']: s for s in result['final_l1']}
+        assert set(states) == {'TEST', 'LONGSYMB'}
+        for state in states.values():
+            assert state['bid'] is None and state['ask'] is None
+            assert state['book_current'] and state['trade_history_current']
+        assert states['TEST']['last'] == {'execution_id': 101, 'price_1e4': 102700, 'quantity': 200, 'trade_date': 20261114}
+        assert states['LONGSYMB']['last'] == {'execution_id': 104, 'price_1e4': 102500, 'quantity': 100, 'trade_date': 20261114}
+        assert states['TEST']['trading_status'] == 'T' and states['TEST']['reg_sho'] == '1'
+        assert states['TEST']['retail'] == 'A'
+        assert states['TEST']['auction_update']['buy_quantity'] == 100
+        assert states['TEST']['auction_summary']['quantity'] == 300
+    finally:
+        cleanup(process)
 
 
 def continuous(directory):
@@ -259,7 +324,7 @@ def continuous(directory):
         result, _, _ = finish(process, report, success=True)
         assert time.monotonic() - before < 1
         assert result['continuous'] and result['complete'] and result['book_current']
-        assert not result['benchmark_valid'] and result['rx_to_l2']['samples'] == 1
+        assert not result['benchmark_valid'] and result['rx_to_l1_decision']['samples'] == 1
     finally:
         cleanup(process)
 
@@ -268,6 +333,7 @@ with tempfile.TemporaryDirectory(prefix='os-processor-') as temporary:
     directory = pathlib.Path(temporary)
     if '--network' in sys.argv:
         full_stream(directory)
+        all_equities_messages(directory)
         loss_cases(directory)
         continuous(directory)
         filtered_traffic(directory)

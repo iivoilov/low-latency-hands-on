@@ -12,20 +12,25 @@ updates, while preserving correct results and detecting lost data. The repositor
 contains the implementations, repeatable synthetic workloads, benchmark tools
 and experiment reports.
 
-**Latest outcome, 13 November 2026:** with two processing threads pinned to
-separate cores sharing a CPU cache, the current C++ and Rust implementations
-complete an update in **0.36–0.41 µs at the median** and **1.04–1.20 µs at
-p99.9**, across the tested traffic profiles. These figures measure the interval
-from receiving a packet in the application to updating the book. The earlier
-NIC-to-application interval was measured separately on different hardware and
-was much larger.
+**Latest workload comparison, 16 November 2026:** the C++ and Rust receivers
+maintain L2 and generate L1 bid/ask/last snapshots across 503 stocks. Eighteen
+separate-host trials completed without detected loss and matched independent
+L1/L2 wire oracles. Median per-run p50 was **1.35–1.51 µs** and p99.9 was
+**3.57–4.52 µs** across the tested builds and profiles. These intervals start
+after `recvmsg` returns and end at each message's L1 emit/no-update decision.
+Earlier L2-only timings use a different endpoint and stay in historical reports.
+
+Optional [GRP/spin recovery](docs/recovery.md) and a
+[per-subscriber market monitor](monitoring/README.md) are available in both
+languages. They remain disabled in benchmark comparisons.
 
 ## What the program does
 
 An order book tracks outstanding buy and sell orders. An **L2 book** aggregates
 them into quantities available at each price. This makes a useful latency test:
 every incoming event requires decoding, finding an order and updating the
-relevant price levels.
+relevant price levels. The current processors also track last trades, trade
+breaks and symbol metadata, and decide whether each message changes L1.
 
 The experiment has three parts:
 
@@ -47,8 +52,8 @@ Network card → Linux network stack → receive thread → packet queue → boo
 ```
 
 The receive thread timestamps each packet immediately after the socket receive
-call returns. The other thread timestamps each completed market update. The
-interval includes queue waiting, decoding and book updates, including earlier
+call returns. The other thread timestamps each message's L1 emit/no-update
+decision. The interval includes queue waiting, decoding and book updates, including earlier
 messages in the same packet.
 
 ## Methods used to keep latency low
@@ -85,60 +90,65 @@ CPU placement; they are not the timings of the current C++ baseline.
 
 ## Latest configuration and timings
 
-The latest comparison used a separate sender and a **Ryzen 9 9950X receiver
-running Debian 13 over 1 Gbps Ethernet**. Receive CPU 2 and book-update CPU 3
-are separate physical cores sharing the last-level cache. C++ used GCC 14.2,
-C++20 and O3; Rust used rustc 1.99.1 with release optimization level 3.
+The selected direction uses a separate EPYC sender and a **Ryzen 9 9950X
+receiver, Debian 13, Linux 6.12.117 and 1 Gbps r8169 Ethernet**. RX CPU 2 and
+book/L1 CPU 3 are separate physical cores sharing L3; startup runs on CPU 3
+and the observer on CPU 15. These CPU choices are specific to this receiver.
+The busy EPYC host is not a qualified receiver baseline.
 
-The current C++ book uses `unordered_map` with SipHash-2-4 for orders and `map`
-for price levels. Rust uses its standard `HashMap` with `RandomState` and
-`BTreeMap`. Both reserve hash-table capacity for a limit of **one million live
-orders**. The timing workload itself has approximately **180 live orders**
-across three symbols; large-book capacity was checked separately in tests.
+C++ uses keyed SipHash-2-4 with `unordered_map` orders and `map` price levels;
+Rust uses `HashMap`/`RandomState` and `BTreeMap`. The C++ decoder reads packed
+wire layouts from exclusively owned packet storage and preserves the bytes.
+Both reserve capacity for one million live orders and bound retained executions.
 
-Each run measures **1,000,000 updates after initialization**. Four profiles
-vary the background rate from 4 to 12 Mbps and the duration/frequency of bursts
-at 20 Mbps. Rates count UDP payload bits. Exact profiles and build settings are
-in the [latest experiment report](docs/experiments/2026-11-13-siphash.md).
+The frozen workload has **503 symbols, 30,180 initialization adds and 1,000,000
+measured updates**, seed 44, with dated vendor reference prices. S1 uses
+8/20 Mbps with 10 ms bursts every 100 ms; S2 uses the same rates with 25 ms
+bursts every 250 ms. Rates count PITCH UDP payload bits. Activity is synthetic,
+not fitted to exchange traffic. The vendor snapshot and generated workloads
+are not distributed; later downloads are different inputs.
 
-All times below are **microseconds (µs)**, reported as medians of three per-run
-percentiles. **p50** is the median update; **p99** and **p99.9** describe the
-slower tail: 99% and 99.9% of sampled updates finish within those times in a run.
+Times are **microseconds**, medians of three per-run percentiles. All 18 baseline
+trials passed the final L1/L2, sample-count, loss and placement checks.
 
-| Profile | C++ p50 | C++ p99 | C++ p99.9 | Rust p50 | Rust p99 | Rust p99.9 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| P1 | 0.400 | 0.810 | 1.070 | 0.360 | 0.860 | 1.200 |
-| P2 | 0.410 | 0.810 | 1.090 | 0.370 | 0.850 | 1.110 |
-| P3 | 0.400 | 0.740 | 1.040 | 0.360 | 0.850 | 1.060 |
-| P4 | 0.400 | 0.780 | 1.070 | 0.360 | 0.870 | 1.130 |
+| Profile | Build | p50 | p99 | p99.9 |
+| --- | --- | ---: | ---: | ---: |
+| S1 | GCC 14.2 O3 | 1.490 | 3.220 | 3.920 |
+| S1 | Clang 19.1 O3 | 1.350 | 2.910 | 3.570 |
+| S1 | Rust 1.99.1 release | 1.510 | 3.230 | 4.520 |
+| S2 | GCC 14.2 O3 | 1.480 | 3.200 | 3.880 |
+| S2 | Clang 19.1 O3 | 1.360 | 2.930 | 3.590 |
+| S2 | Rust 1.99.1 release | 1.510 | 3.250 | 4.510 |
 
-All **36 trials** completed with matching final books and no detected loss:
-12 current C++, 12 Rust and 12 previous C++ controls. No attempt was retried
-or excluded. [Per-trial data and methods](docs/experiments/2026-11-13-siphash.md)
-include achieved rates, queue wait and outliers.
+These are the controls in the [503-stock report](docs/experiments/2026-11-16-sp500.md),
+before the subsequent ring-cache/quantity edits. One GCC S1 run reached
+5.250 µs at p99.9 and remains in the results. Three repetitions, shared OS work
+and limited offered load do not establish a language ranking or maximum throughput.
 
-These are observations from small synthetic books and three repetitions per
-condition. p99.9 is not a maximum: the largest individual application interval
-across the full comparison was 265.050 µs. CPUs were pinned but remained available
-to other OS work. The offered traffic does not establish maximum throughput.
+The [subsequent independent-change comparison](benchmark/README.md#native-ring-and-quantity-comparison-2026-11-16)
+retains 54/54 new native trials and reuses those 18 controls after checking runtime
+source equivalence. Rust quantity-only has a small gain; ring-only and combined
+results are mixed. Current source includes both changes; no overall speedup from
+the combination is claimed. WSL2 results remain separate.
 
-The application timings exclude NIC, driver and kernel delivery before the
-receive call returns. The hardware-timestamp results above come from a separate
-RX-only probe on another receiver; their percentiles cannot be added to these
-figures to obtain end-to-end latency. Combined NIC-to-book latency remains
-unmeasured. DPDK/kernel-bypass processing is planned.
+Application timings exclude NIC/driver/kernel delivery before the receive call
+returns. Earlier hardware timestamps came from a separate EPYC/X550 RX probe;
+their percentiles cannot be added to these figures. Combined NIC-to-L1 latency
+remains unmeasured. [AF_XDP checks](docs/experiments/2026-11-13-xdp-rx-timing.md)
+collected no receive or latency samples; DPDK remains planned.
 
 ## Explore or reproduce
 
 - [Build and run](docs/usage.md): local checks and separate-host experiments.
 - [Experiment reports](docs/experiments/README.md): hardware, methods, outcomes
   and reviewed JSON/CSV result tables.
-- [Workload recipes](simulator/play_files/README.md): generate the four profiles.
+- [Workload recipes](simulator/play_files/README.md): generate the routine 503-stock set or historical three-stock profiles.
 - [Project structure](docs/structure.md) and [processor design](processors/README.md).
-- [Protocol scope](docs/market-data.md): the implemented PITCH subset.
+- [Protocol scope](docs/market-data.md): equities message coverage and generator subset.
 
-Generated workloads and raw captures are not distributed; the workloads can be
-regenerated from the supplied recipes.
+Generated workloads and raw captures are not distributed. Historical synthetic
+profiles can be regenerated from the recipes. Reproducing the exact 503-stock
+bytes also requires the original vendor input snapshot; a new download changes it.
 
 ## License
 

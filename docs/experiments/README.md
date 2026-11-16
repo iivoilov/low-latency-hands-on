@@ -1,6 +1,6 @@
 # Experiments and measurement methods
 
-Measurements were collected on 12–13 November 2026. The names below are hardware
+Measurements were collected on 12–16 November 2026. The names below are hardware
 labels, not host names. [Machine-readable hardware](../../configs/hardware.json)
 and [profile parameters/checksums](profiles.json) accompany the reports.
 
@@ -29,6 +29,17 @@ cores are on node 0. Placement pins are not exclusive CPU reservations.
    validation and state bounds, C++ keyed hashing without collision rejection,
    full native validation and 36 separate-host timing trials.
 
+## Newer experiments
+
+- [LTO comparison](2026-11-13-lto.md): 96 trials, fresh controls, GCC/Clang/Rust LTO variants.
+- [AF_XDP capability checks](2026-11-13-xdp-zerocopy.md) and [receive timing attempt](2026-11-13-xdp-rx-timing.md): bind capability differs from packet reception; no AF_XDP latency samples, including the Debian 13 retest.
+- [Packed decoder](2026-11-14-packed-decoder.md), [layout/ordering breakdown](2026-11-14-decoder-breakdown.md), and [in-place decoder](2026-11-14-zero-copy-decoder.md): equivalence checks and isolated decoder measurements.
+- [RX-to-L1 matrix](2026-11-14-rx-l1.md): 60/60 valid selected-direction trials, separate reverse diagnostics, and a complete placement audit.
+- [503-stock workloads](2026-11-16-sp500.md): two frozen seed-44 profiles, three builds and three repetitions; 18/18 valid trials.
+- [Ring caching and quantity changes](../../benchmark/README.md#native-ring-and-quantity-comparison-2026-11-16): 54/54 new native trials plus 18 source-checked baseline trials. Independent and combined changes retain mixed outcomes and regressions. Separate WSL2 results are not receiver-host qualification.
+
+The EPYC and Ryzen hosts both used Debian 13 kernel 6.12.117 in the November 14/16 matrices; the earlier table describes their original configurations. The EPYC host is a busy sender, not a qualified receiver baseline. RX 2 / book 3 / observer 15 is specific to the Ryzen receiver.
+
 ## Workload and timing contract
 
 The synthetic BYX/EDGA equities PITCH subset initializes three symbols with ten
@@ -39,7 +50,7 @@ burst duration and period vary. Rates are decimal PITCH UDP payload bits,
 excluding network overhead. All four seed-43 files carry 125,024 datagrams.
 See [recipes](../../simulator/play_files/README.md) and [protocol scope](../market-data.md).
 
-The L2 processors use MONOTONIC elapsed time from immediately after `recvmsg`
+Historical L2 processors use MONOTONIC elapsed time from immediately after `recvmsg`
 return to each completed update. This includes ring wait, decoding, allocation,
 clock reads, scheduling and earlier messages in the same packet. Initialization
 and controls are excluded. It excludes NIC/driver/kernel delivery before RX
@@ -77,3 +88,10 @@ Containers, toolchains, CPU topology, scheduling and network direction all matte
 No confidence intervals or universal language/hardware rankings are claimed.
 DPDK, exact physical-wire calibration and paired wire-to-L2 measurements remain
 future work. Run your own tests with [the usage guide](../usage.md).
+
+Current processors end timing after each message's L1 emit/no-update decision,
+including L2, trade and metadata changes. Historical RX-to-L2 timings remain
+separate. Routine comparisons use the 503-stock seed-44 workloads, with 30,180
+initialization adds and one million measured updates; S1/S2 retain 8/20 Mbps
+background/peak with 10/100 ms and 25/250 ms bursts. Three-stock fixtures remain
+fast functional and historical controls. See the [L1 contract](../pitch-l1.md).
