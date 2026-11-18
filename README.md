@@ -1,156 +1,178 @@
-# Low-latency programming experiments
+# Low-Latency Hands-On
 
-This project explores how to process incoming data with low and predictable
-latency. I use a market-data receiver as the test case: it receives messages
-about orders being added, changed, executed or cancelled, then updates an
-in-memory view of the market. The experiments compare C++ and Rust, compiler
-settings, thread placement and data structures, and measure where time is spent
-between the network card and the completed update.
+A C++20 and Rust market-data receiver, with repeatable experiments in latency,
+correctness and systems performance. It consumes exchange-style messages about
+orders and trades, maintains an in-memory order book, and produces the latest
+bid, ask and last-trade state.
 
-The goal is to understand which choices improve latency, especially the slowest
-updates, while preserving correct results and detecting lost data. The repository
-contains the implementations, repeatable synthetic workloads, benchmark tools
-and experiment reports.
+Low latency keeps that view fresh. Predictable latency matters because occasional
+slow updates can leave a consumer behind during bursts, even when the average
+looks good. This project measures both typical updates and the slower tail,
+while checking that the resulting market state is correct.
 
-**Latest workload comparison, 16 November 2026:** the C++ and Rust receivers
-maintain L2 and generate L1 bid/ask/last snapshots across 503 stocks. Eighteen
-separate-host trials completed without detected loss and matched independent
-L1/L2 wire oracles. Median per-run p50 was **1.35–1.51 µs** and p99.9 was
-**3.57–4.52 µs** across the tested builds and profiles. These intervals start
-after `recvmsg` returns and end at each message's L1 emit/no-update decision.
-Earlier L2-only timings use a different endpoint and stay in historical reports.
+**Latest measured combined variant, 16 November 2026:** across three builds and
+two 503-stock workloads, median per-run p50 was **1.35–1.52 µs** and p99.9 was
+**3.57–4.56 µs**, with one million measured updates per run and no detected loss.
+Within a run, p50 is the median and p99.9 covers 99.9% of sampled updates.
+These are application timings, starting after socket reception and ending at
+the decision to emit or suppress an L1 update (best bid, best ask and last trade).
+NIC-to-L1 latency and maximum
+throughput remain unmeasured. [Results and controls](benchmark/README.md#native-ring-and-quantity-comparison-2026-11-16).
 
-Optional [GRP/spin recovery](docs/recovery.md) and a
-[per-subscriber market monitor](monitoring/README.md) are available in both
-languages. They remain disabled in benchmark comparisons.
+The main findings: placement and measurement boundaries matter; decoder gains
+can reverse with message order; and combining two optimizations need not retain
+the benefit of either one. Correctness checks and negative results accompany
+the performance claims.
 
-## What the program does
+[Run locally](#build-and-run) · [Measurements](#measured-application-latency) ·
+[Experiments](docs/experiments/README.md) · [AI-assisted development](#ai-assisted-development) ·
+[External comparisons](docs/comparisons.md)
 
-An order book tracks outstanding buy and sell orders. An **L2 book** aggregates
-them into quantities available at each price. This makes a useful latency test:
-every incoming event requires decoding, finding an order and updating the
-relevant price levels. The current processors also track last trades, trade
-breaks and symbol metadata, and decide whether each message changes L1.
+## From feed to market state
 
-The experiment has three parts:
+**PITCH** is Cboe's binary market-data protocol. **L2**, or market depth,
+aggregates outstanding buy and sell quantities at each price. **L1** summarizes
+the best bid, best ask and last trade. **UDP multicast** sends a stream to a
+network group that multiple receivers can subscribe to.
 
-1. **Prepare a workload.** Generate a repeatable synthetic feed using a subset
-   of the CBOE PITCH protocol, with steady traffic and periodic bursts.
-   Save the expected final book so the receiver's result can be checked.
-2. **Replay it over a network.** A separate machine sends the prepared packets
-   using UDP multicast, which delivers the same stream to subscribed receivers.
-3. **Process and measure.** A C++ or Rust receiver applies the updates, records
-   latency and loss. The benchmark checks its final book against the expected result.
+Three programs make the experiments repeatable:
 
-The current receivers use ordinary Linux UDP sockets. Each has a receive thread
-and a book-update thread, connected by a bounded queue of whole packets:
+1. `prepare_feed` creates a deterministic synthetic PITCH workload, a packet
+   capture (PCAP) with scheduled send times, and an expected final L2 book.
+2. `play_feed` preloads it and sends the packets over multicast. Delayed sends
+   stretch the schedule; achieved rate and schedule slip are reported.
+3. `processor_cpp` or `processor_rust` receives whole packets, decodes messages,
+   updates L2/trades/metadata and decides whether L1 changed.
 
-```text
-Network card → Linux network stack → receive thread → packet queue → book-update thread
-                                     |                                            |
-                                     +──── measured application latency ──────────+
+Both receivers use Linux sockets and two threads. A bounded
+single-producer/single-consumer queue transfers packet ownership from reception
+to one book-owning thread. Queue and timing storage are allocated before RX;
+book-node allocations remain inside the timed work. Overflow drops the new
+packet, preserving unread data. Benchmarks stop on loss. Independent wire
+reconstruction checks final L1/L2 state and decision counts in the published matrices.
+
+The receivers cover [U.S. equities multicast PITCH](docs/pitch-l1.md); the
+synthetic generator exercises a smaller subset. Optional
+[gap retransmission and snapshot recovery](docs/recovery.md) and a
+[market monitor](monitoring/README.md) are implemented in both languages and
+stay disabled in benchmark comparisons. Kernel bypass remains experimental:
+[AF_XDP checks](docs/experiments/2026-11-13-xdp-rx-timing.md) yielded no latency
+samples; DPDK is planned.
+
+## Measured application latency
+
+**p50** is the median; **p99** and **p99.9** are the times within which 99% and
+99.9% of sampled updates finish. They describe the tail, not a worst-case bound.
+Each run uses nearest-rank percentiles; summaries take the median of three
+per-run percentiles, without pooling samples.
+
+![Application latency: GCC C++, Clang C++ and Rust, p50/p99/p99.9](docs/images/application-latency.svg)
+
+*16 November 2026, S1 combined variant. Bars show medians; whiskers show the full
+three-run range. [JSON](docs/experiments/2026-11-16-ring-quantity-ryzen-results.json),
+[CSV](docs/experiments/2026-11-16-ring-quantity-ryzen-results.csv).
+Timing: `CLOCK_MONOTONIC` immediately after successful `recvmsg` return through
+each message's L1 emit/no-update decision, including queue wait, decoding,
+state updates and earlier messages in the same packet.*
+
+The receiver was a Ryzen 9 9950X, Debian 13 / Linux 6.12.117, with 1 Gbps r8169
+Ethernet; a separate EPYC 7742 sent the stream. RX CPU 2 and book CPU 3 share L3.
+Affinity was verified, but cores were not isolated from OS work. Builds were
+GCC 14.2 O3, Clang 19.1 O3 and Rust 1.99.1 release, without LTO or native target
+flags. Containers and keyed hashing differ between languages, so this compares
+implementations and toolchains rather than isolating a language effect.
+
+Both profiles use seed 44, 503 symbols, 30,180 initialization adds and 1,000,000
+measured updates. S1 uses 8 Mbps background / 20 Mbps peak, with 10 ms bursts
+every 100 ms; S2 uses 25 ms every 250 ms. Rates count PITCH UDP payload bits.
+The cycle average is 9.2 Mbps; this limited offered load does not establish
+capacity. Activity is synthetic, not fitted to real exchange traffic.
+
+The latest study validated 54 new trials covering ring-only, quantity-only and
+combined changes, reusing 18 earlier controls after runtime-source checks.
+The chart selects the combined variant implemented in current source. The
+[earlier 503-stock table](docs/experiments/2026-11-16-sp500.md) is the pre-change
+control. Historical L2-only timings use a different endpoint and stay separate.
+
+## Where the receive time goes
+
+![Separate NIC-to-userspace and application timing boundaries](docs/images/receive-boundaries.svg)
+
+*The [12 November RX-only probe](docs/experiments/2026-11-12-hardware-rx.md)
+used an EPYC/X550 receiver and a different workload. Each of three captures
+received all 125,024 packets. NIC-to-userspace p50 was 43.2–43.8 µs; p99.9 was
+0.893–1.547 ms. PHC clock-read half-width reached 2.786 µs; physical-wire
+calibration remains unverified. These per-packet percentiles cannot be added
+to the Ryzen per-message application percentiles. No combined total was measured.*
+
+## Experiments that changed the interpretation
+
+![Historical decoder experiment: gains and regressions depend on message order](docs/images/decoder-ordering.svg)
+
+*The [14 November decoder study](docs/experiments/2026-11-14-decoder-breakdown.md)
+compares a bulk-copy packed decoder against a byte decoder, keeping the same
+five order layouts and backing bytes. Values are changes in medians of nine
+paired batch-average decode times, not message latency percentiles. This was
+an i9-13900K / WSL2 / GCC 12.2 microbenchmark, not a network receiver result
+or a measurement of today's zero-copy decoder. [JSON](docs/experiments/2026-11-14-decoder-breakdown-results.json).*
+
+Message order alone changed packed decoding from 21.5% slower to 19.8% faster.
+The full report retains near-parity cases, regressions and a separate diagnostic;
+branch-prediction effects are an interpretation, without hardware-counter proof.
+
+The [native ring/quantity study](benchmark/README.md#native-ring-and-quantity-comparison-2026-11-16)
+found a small Rust quantity-only gain that did not survive combining the changes.
+Its earlier controls were not interleaved with new trials, limiting interpretation
+of small differences. [Affinity](docs/experiments/2026-11-12-cpu-affinity.md)
+and [SipHash hardening](docs/experiments/2026-11-13-siphash.md) are earlier studies:
+they inform design choices without supplying current-source latency claims.
+
+[External references](docs/comparisons.md) include LMAX Disruptor, Aeron, DPDK
+and published ITCH/order-book benchmarks. Their handoff, round-trip, forwarding
+and batch-processing boundaries differ. No defensible direct latency comparison
+was found; they inform architecture and experimental methods.
+
+## AI-assisted development
+
+Codex researched techniques, implemented changes, tested them and ran benchmarks;
+the engineer directed scope and reviewed conclusions. This attribution is
+maintainer-confirmed. The linked artifacts establish the experiments, rather
+than independently documenting every human/agent interaction.
+
+Two episodes show the division of work. The decoder investigation extended
+paired tests, checked decoded fields and inspected compiler output; contradictory
+ordering results prevented a blanket speedup claim. The ring/quantity study
+measured each change separately and together, checked final state against wire
+oracles, and retained mixed and negative outcomes. The engineer chose to reuse
+the earlier validated controls, and that limitation stays explicit.
+
+AI accelerated exploration and implementation; architecture, correctness and
+interpretation remain the engineer's responsibility. [Evidence and attribution](docs/development.md).
+
+## Build and run
+
+Linux, CMake 3.20+, a C++20 compiler and Python 3 are sufficient for the core:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j 4
+ctest --test-dir build --output-on-failure
 ```
 
-The receive thread timestamps each packet immediately after the socket receive
-call returns. The other thread timestamps each message's L1 emit/no-update
-decision. The interval includes queue waiting, decoding and book updates, including earlier
-messages in the same packet.
+For Rust, install a toolchain and run `python3 benchmark/build_rust.py`.
+Dependencies are pinned in `Cargo.lock`. [Usage](docs/usage.md) includes Rust tests
+and a complete two-terminal loopback example. Network tests require multicast
+sockets; offline-only tests use `ctest --test-dir build -LE network --output-on-failure`.
+Run the network label separately where sockets are allowed.
 
-## Methods used to keep latency low
+[Workload recipes](simulator/play_files/README.md) reproduce synthetic fixtures.
+Exact 503-stock bytes also require the original dated vendor input, which is
+not distributed; a fresh download is a different input. Reviewed JSON/CSV
+per-run results and hashes are published; raw captures and build snapshots are
+not. [Benchmark prerequisites](benchmark/README.md), [source navigation](docs/structure.md)
+and [figure regeneration](docs/images/README.md) provide the next steps.
 
-- **Keep preparation and reporting outside processing.** Replay files are loaded
-  before sending; queue and timing storage and hash-table capacity are reserved
-  before reception. Results are written afterward. Book-node allocations still
-  occur during processing and are included in the timings.
-- **Give one thread ownership of the book.** A single-producer/single-consumer
-  queue transfers whole packets without a mutex; the book-update thread owns
-  all order and price-level state.
-- **Control CPU placement.** Pin the two threads to separate physical cores
-  sharing the last-level cache, reducing the observed cost and variability of
-  passing packets between them.
-- **Keep correctness and resource limits explicit.** Validate input, bound queues
-  and live orders, and detect sequence gaps. Benchmark runs stop on loss; only
-  complete runs with matching final books enter successful latency summaries.
-  The current C++ order lookup also uses secret-keyed SipHash to resist deliberately
-  engineered hash collisions, with its measured cost retained in the results.
-
-## What was checked and learned
-
-| Experiment | Finding |
-| --- | --- |
-| [GCC vs Clang, O2 vs O3](docs/experiments/2026-11-12-cpp-os.md) | No consistent O3 advantage in the initial trials. Uncontrolled thread placement limited compiler comparisons. |
-| [Thread placement and shared cache](docs/experiments/2026-11-12-cpu-affinity.md) | On an earlier C++ version, separate cores sharing cache narrowed the p99.9 range from 0.59–1.18 µs unpinned to 0.57–0.62 µs. Across cache domains, median p99.9 rose to 1.33 µs. |
-| [C++ and Rust implementations](docs/experiments/2026-11-13-siphash.md) | Both achieved sub-microsecond median application latency. Rust had a slightly lower median; C++ had a slightly lower p99.9 in the latest profiles. Their containers and hashing differ, so this does not establish a general language ranking. |
-| [C++ hash protection](docs/experiments/2026-11-13-siphash.md) | SipHash replaced an earlier scheme that could reject valid collisions. Median latency increased by 80 ns, about 24–25%; SipHash is the selected C++ baseline. |
-| [Reversing sender and receiver](docs/experiments/2026-11-12-reverse-direction.md) | Only the lowest-rate profile completed. Separate captures found missing-packet counts matching sender-queue drops; incomplete runs were excluded. |
-| [NIC hardware receive timestamps](docs/experiments/2026-11-12-hardware-rx.md) | On the separate EPYC/X550 receiver, NIC-to-application p50 was 43–44 µs and p99.9 was 0.893–1.547 ms. This exposes receive-path delay that the application timer excludes. |
-
-The affinity results used an earlier implementation. They explain the selected
-CPU placement; they are not the timings of the current C++ baseline.
-
-## Latest configuration and timings
-
-The selected direction uses a separate EPYC sender and a **Ryzen 9 9950X
-receiver, Debian 13, Linux 6.12.117 and 1 Gbps r8169 Ethernet**. RX CPU 2 and
-book/L1 CPU 3 are separate physical cores sharing L3; startup runs on CPU 3
-and the observer on CPU 15. These CPU choices are specific to this receiver.
-The busy EPYC host is not a qualified receiver baseline.
-
-C++ uses keyed SipHash-2-4 with `unordered_map` orders and `map` price levels;
-Rust uses `HashMap`/`RandomState` and `BTreeMap`. The C++ decoder reads packed
-wire layouts from exclusively owned packet storage and preserves the bytes.
-Both reserve capacity for one million live orders and bound retained executions.
-
-The frozen workload has **503 symbols, 30,180 initialization adds and 1,000,000
-measured updates**, seed 44, with dated vendor reference prices. S1 uses
-8/20 Mbps with 10 ms bursts every 100 ms; S2 uses the same rates with 25 ms
-bursts every 250 ms. Rates count PITCH UDP payload bits. Activity is synthetic,
-not fitted to exchange traffic. The vendor snapshot and generated workloads
-are not distributed; later downloads are different inputs.
-
-Times are **microseconds**, medians of three per-run percentiles. All 18 baseline
-trials passed the final L1/L2, sample-count, loss and placement checks.
-
-| Profile | Build | p50 | p99 | p99.9 |
-| --- | --- | ---: | ---: | ---: |
-| S1 | GCC 14.2 O3 | 1.490 | 3.220 | 3.920 |
-| S1 | Clang 19.1 O3 | 1.350 | 2.910 | 3.570 |
-| S1 | Rust 1.99.1 release | 1.510 | 3.230 | 4.520 |
-| S2 | GCC 14.2 O3 | 1.480 | 3.200 | 3.880 |
-| S2 | Clang 19.1 O3 | 1.360 | 2.930 | 3.590 |
-| S2 | Rust 1.99.1 release | 1.510 | 3.250 | 4.510 |
-
-These are the controls in the [503-stock report](docs/experiments/2026-11-16-sp500.md),
-before the subsequent ring-cache/quantity edits. One GCC S1 run reached
-5.250 µs at p99.9 and remains in the results. Three repetitions, shared OS work
-and limited offered load do not establish a language ranking or maximum throughput.
-
-The [subsequent independent-change comparison](benchmark/README.md#native-ring-and-quantity-comparison-2026-11-16)
-retains 54/54 new native trials and reuses those 18 controls after checking runtime
-source equivalence. Rust quantity-only has a small gain; ring-only and combined
-results are mixed. Current source includes both changes; no overall speedup from
-the combination is claimed. WSL2 results remain separate.
-
-Application timings exclude NIC/driver/kernel delivery before the receive call
-returns. Earlier hardware timestamps came from a separate EPYC/X550 RX probe;
-their percentiles cannot be added to these figures. Combined NIC-to-L1 latency
-remains unmeasured. [AF_XDP checks](docs/experiments/2026-11-13-xdp-rx-timing.md)
-collected no receive or latency samples; DPDK remains planned.
-
-## Explore or reproduce
-
-- [Build and run](docs/usage.md): local checks and separate-host experiments.
-- [Experiment reports](docs/experiments/README.md): hardware, methods, outcomes
-  and reviewed JSON/CSV result tables.
-- [Workload recipes](simulator/play_files/README.md): generate the routine 503-stock set or historical three-stock profiles.
-- [Project structure](docs/structure.md) and [processor design](processors/README.md).
-- [Protocol scope](docs/market-data.md): equities message coverage and generator subset.
-
-Generated workloads and raw captures are not distributed. Historical synthetic
-profiles can be regenerated from the recipes. Reproducing the exact 503-stock
-bytes also requires the original vendor input snapshot; a new download changes it.
-
-## License
-
-[MIT](LICENSE). SipHash-derived code includes the
-[upstream CC0 dedication](docs/licenses/SipHash-CC0.txt).
+[MIT license](LICENSE); SipHash-derived code retains its
+[CC0 attribution](docs/licenses/SipHash-CC0.txt). The
+[inspiring engineering article](https://deepengineering.net/p/from-nic-to-p99-engineering-low-latency)
+guides experiments; its latency targets are not results of this project.
