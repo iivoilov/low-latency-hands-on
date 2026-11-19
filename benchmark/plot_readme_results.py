@@ -98,9 +98,9 @@ def receive_chart(application, receive, output, preview):
     rows = [s for s in application['summary'] if s['profile'] == 'S1' and s['variant'] == 'both']
     app50 = [r['p50_ns'] / 1000 for r in rows]
     app999 = [r['p99_9_ns'] / 1000 for r in rows]
-    fig = plt.figure(figsize=(7.6, 8.8))
+    fig = plt.figure(figsize=(7.6, 6.9))
     ax = fig.add_axes([0, 0, 1, 1])
-    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.set(xlim=(0, 1), ylim=(.23, 1.015))
     ax.axis('off')
     ax.text(.04, .96, 'Two timing boundaries', fontsize=20, weight='bold')
     ax.text(.04, .918, 'Architecture only · stage heights are not elapsed time', fontsize=12)
@@ -127,14 +127,6 @@ def receive_chart(application, receive, output, preview):
             f'3 runs/build × 1M updates\np50: {min(app50):.2f}–{max(app50):.2f} µs\n'
             f'p99.9: {min(app999):.2f}–{max(app999):.2f} µs',
             va='top', fontsize=12, linespacing=1.6)
-    ax.text(.04, .18, 'Different hosts, workloads and sample units. Do not add percentiles.',
-            fontsize=12, weight='bold')
-    half_width = receive['summary']['max_phc_read_half_width_ns'] / 1000
-    ax.text(.04, .133, f'RX ranges: three per-run percentiles; PHC read half-width ≤ {half_width:.4f} µs.\n'
-            'Application ranges: medians per build (combined variant); ring wait included.\n'
-            'Physical-wire calibration and combined NIC-to-L1 latency are unmeasured.\n'
-            'Sources: hardware-rx (12 Nov) and ring-quantity-ryzen (16 Nov) JSON.',
-            va='top', fontsize=10.5, linespacing=1.6)
     save(fig, output, 'receive-boundaries', preview)
 
 

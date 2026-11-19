@@ -102,8 +102,11 @@ control. Historical L2-only timings use a different endpoint and stay separate.
 used an EPYC/X550 receiver and a different workload. Each of three captures
 received all 125,024 packets. NIC-to-userspace p50 was 43.2–43.8 µs; p99.9 was
 0.893–1.547 ms. PHC clock-read half-width reached 2.786 µs; physical-wire
-calibration remains unverified. These per-packet percentiles cannot be added
-to the Ryzen per-message application percentiles. No combined total was measured.*
+calibration remains unverified. The application ranges are medians per build
+for the [combined variant](docs/experiments/2026-11-16-ring-quantity-ryzen-results.json),
+including ring wait. The studies measure separate intervals on different hosts
+and workloads, using per-packet and per-message samples respectively. They do
+not establish combined NIC-to-L1 latency.*
 
 ## Experiments that changed the interpretation
 
